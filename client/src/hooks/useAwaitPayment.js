@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useWebSocket, WS_EVENTS } from "./useWebSocket";
+import { useWsEvent } from "../context/WebSocketContext";
+import { WS_EVENTS } from "../utils/constants";
 import { ordersApi } from "../api/orders.api";
 
 /** Poll + WS until order is paid */
-export function useAwaitPayment(orderId, token, { onPaid, enabled }) {
+export function useAwaitPayment(orderId, _token, { onPaid, enabled }) {
   const queryClient = useQueryClient();
 
-  useWebSocket(token, (type, payload) => {
+  useWsEvent((type, payload) => {
     if (!enabled) return;
     if (type === WS_EVENTS.ORDER_PAID && payload?.orderId === orderId) {
       queryClient.invalidateQueries({ queryKey: ["orders", orderId] });

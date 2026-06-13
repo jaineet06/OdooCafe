@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { floorsApi } from "../../../api/floors.api";
 import { usePos } from "../../../context/PosContext";
-import { useAuth } from "../../../context/AuthContext";
-import { useWebSocket, WS_EVENTS } from "../../../hooks/useWebSocket";
+import { useWsEvent } from "../../../context/WebSocketContext";
+import { WS_EVENTS } from "../../../utils/constants";
 import { Modal } from "../../../components/common/Modal";
 import { CardSkeleton } from "../../../components/common/Skeletons";
 import { Button } from "../../../components/common/Button";
@@ -13,7 +13,6 @@ import { TableFloorPlan } from "../../../components/pos/TableFloorPlan";
 export function FloorPopup({ open, onClose }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { token } = useAuth();
   const { setSelectedTable } = usePos();
 
   const { data: floors, isLoading } = useQuery({
@@ -22,7 +21,7 @@ export function FloorPopup({ open, onClose }) {
     enabled: open,
   });
 
-  useWebSocket(token, (type) => {
+  useWsEvent((type) => {
     if (!open) return;
     if (type === WS_EVENTS.TABLE_STATUS_CHANGED || type === WS_EVENTS.ORDER_PAID) {
       queryClient.invalidateQueries({ queryKey: ["floors"] });

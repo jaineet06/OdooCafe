@@ -9,14 +9,13 @@ import { useAuth } from "../../../context/AuthContext";
 import { PosLayout } from "../../../components/layout/PosLayout";
 import { SearchInput, PageToolbar } from "../../../components/common/SearchInput";
 import { Select } from "../../../components/common/Select";
-import { StatusPill, OrderStatusPill } from "../../../components/common/Badge";
+import { OrderStatusPill } from "../../../components/common/Badge";
 import { EmptyState } from "../../../components/common/EmptyState";
 import { Card } from "../../../components/common/Card";
 import { Button } from "../../../components/common/Button";
 import { Drawer } from "../../../components/common/Drawer";
 import { CardSkeleton } from "../../../components/common/Skeletons";
 import { ReceiptDocument } from "../../../components/receipt/ReceiptDocument";
-import { useStagger } from "../../../hooks/useGsapAnimation";
 import { formatCurrency, formatDateTime } from "../../../utils/formatters";
 import { useDebounce } from "../../../hooks/useDebounce";
 
@@ -86,8 +85,6 @@ export default function OrdersListPage() {
     return sorted;
   }, [data, debouncedSearch, sortBy]);
 
-  const gridRef = useStagger(".order-card", [orders.length, statusFilter]);
-
   const loadForEdit = (order) => {
     setEditingOrderId(order.id);
     setCart(
@@ -136,10 +133,7 @@ export default function OrdersListPage() {
         ) : orders.length === 0 ? (
           <EmptyState icon={LayoutGrid} title="No orders" description="Orders will appear here once created." />
         ) : (
-          <div
-            ref={gridRef}
-            className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-          >
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {orders.map((o) => (
               <button
                 key={o.id}

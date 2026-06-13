@@ -10,10 +10,17 @@ export function ProductCard({ product, color, onAdd }) {
   const [imgSrc, setImgSrc] = useState(() => resolveProductImage(product));
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onAdd(product)}
-      className="product-card group relative flex w-full flex-col overflow-hidden rounded-2xl bg-bg-elevated text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onAdd(product);
+        }
+      }}
+      className="product-card group relative flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-bg-elevated text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
     >
       <div className="relative flex flex-1 items-center justify-center bg-bg-sunken/50 px-4 pt-6 pb-2">
         <img
@@ -25,8 +32,12 @@ export function ProductCard({ product, color, onAdd }) {
         />
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onAdd(product); }}
-          className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-brand-espresso text-bg-elevated shadow-md transition-transform group-hover:scale-110"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdd(product);
+          }}
+          className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-brand-espresso text-bg-elevated shadow-md"
+          aria-label={`Add ${product.name}`}
         >
           <Plus size={18} strokeWidth={2} />
         </button>
@@ -47,6 +58,6 @@ export function ProductCard({ product, color, onAdd }) {
           <p className="shrink-0 font-display text-base text-accent-primary">{formatCurrency(product.price)}</p>
         </div>
       </div>
-    </button>
+    </div>
   );
 }

@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 import { Monitor, Coffee } from "lucide-react";
 import { authApi } from "../../api/auth.api";
 import { useAuth } from "../../context/AuthContext";
-import { usePageEnter } from "../../hooks/useGsapAnimation";
 import { Button } from "../../components/common/Button";
 import { Input } from "../../components/common/Input";
 import { Card } from "../../components/common/Card";
@@ -19,7 +18,6 @@ const schema = Joi.object({
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const panelRef = usePageEnter([]);
   const {
     register,
     handleSubmit,
@@ -54,7 +52,7 @@ export default function LoginPage() {
       </div>
 
       <div className="flex flex-1 items-center justify-center bg-bg-base p-6">
-        <div ref={panelRef} className="w-full max-w-md">
+        <div className="w-full max-w-md">
         <Card className="w-full" padding="lg">
           <h2 className="font-display text-2xl text-brand-espresso">Sign in</h2>
           <p className="mt-1 text-sm text-text-muted">Access your POS terminal or admin panel</p>

@@ -159,7 +159,12 @@ export async function getOrderStatusAnalytics(tenantId) {
        WHERE t.tenant_id = $1 AND t.is_active = TRUE
          AND EXISTS (
            SELECT 1 FROM orders o
-           WHERE o.table_id = t.id AND o.tenant_id = t.tenant_id AND o.status = 'draft'
+           INNER JOIN sessions s ON s.id = o.session_id
+             AND s.tenant_id = o.tenant_id
+             AND s.status = 'open'
+           WHERE o.table_id = t.id
+             AND o.tenant_id = t.tenant_id
+             AND o.status NOT IN ('paid', 'cancelled')
          )`,
       [tenantId]
     ),

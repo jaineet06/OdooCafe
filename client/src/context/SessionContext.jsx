@@ -2,13 +2,14 @@ import { createContext, useContext, useState, useCallback, useEffect } from "rea
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { sessionsApi } from "../api/sessions.api";
 import { useAuth } from "./AuthContext";
-import { useWebSocket, WS_EVENTS } from "../hooks/useWebSocket";
+import { useWsEvent } from "../context/WebSocketContext";
+import { WS_EVENTS } from "../utils/constants";
 import { setSessionClosedHandler } from "../api/axios";
 
 const SessionContext = createContext(null);
 
 export function SessionProvider({ children }) {
-  const { token, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [locked, setLocked] = useState(false);
 
@@ -29,7 +30,7 @@ export function SessionProvider({ children }) {
     return () => setSessionClosedHandler(null);
   }, [lockSession]);
 
-  useWebSocket(token, (type) => {
+  useWsEvent((type) => {
     if (type === WS_EVENTS.SESSION_CLOSED) {
       lockSession();
     }

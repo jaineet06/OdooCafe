@@ -10,7 +10,6 @@ import { reportsApi } from "../../../api/config.api";
 import { usePos } from "../../../context/PosContext";
 import { useCategories, getCategoryColor } from "../../../context/CategoryContext";
 import { useDebounce } from "../../../hooks/useDebounce";
-import { useStagger } from "../../../hooks/useGsapAnimation";
 import { PosLayout } from "../../../components/layout/PosLayout";
 import { Button } from "../../../components/common/Button";
 import { Input } from "../../../components/common/Input";
@@ -22,7 +21,6 @@ import { CartPanel } from "../../../components/pos/CartPanel";
 import { FloorPopup } from "../floor-popup/FloorPopup";
 import { Modal } from "../../../components/common/Modal";
 import { couponsApi } from "../../../api/config.api";
-import { celebrateDiscount } from "../../../utils/confetti";
 
 export default function OrderViewPage() {
   const navigate = useNavigate();
@@ -96,8 +94,6 @@ export default function OrderViewPage() {
     staleTime: 500,
   });
 
-  const gridRef = useStagger(".product-card", [products.length, categoryFilter, debouncedSearch]);
-
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!session?.id) throw new Error("No open session");
@@ -128,7 +124,6 @@ export default function OrderViewPage() {
       const result = await couponsApi.validate({ code: couponInput, orderTotal: subtotal });
       setCouponCode(couponInput);
       setDiscountOpen(false);
-      celebrateDiscount();
       toast.success(`Coupon applied — saved ${result.discountAmount ?? ""}`);
     } catch (err) {
       toast.error(err.userMessage);
@@ -188,7 +183,7 @@ export default function OrderViewPage() {
           ) : products.length === 0 ? (
             <p className="py-16 text-center text-text-muted">No products found</p>
           ) : (
-            <div ref={gridRef} className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
               {products.map((p) => (
                 <ProductCard
                   key={p.id}

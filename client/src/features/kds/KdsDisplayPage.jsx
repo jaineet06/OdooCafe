@@ -2,39 +2,22 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { kdsApi } from "../../api/config.api";
-import { useAuth } from "../../context/AuthContext";
-import { useWebSocket, WS_EVENTS } from "../../hooks/useWebSocket";
+import { useWsEvent } from "../../context/WebSocketContext";
+import { WS_EVENTS } from "../../utils/constants";
 import { useDebounce } from "../../hooks/useDebounce";
-import { useStagger } from "../../hooks/useGsapAnimation";
 import { KdsLayout } from "../../components/layout/KdsLayout";
 import { SearchInput } from "../../components/common/SearchInput";
 import { StatusPill } from "../../components/common/Badge";
 import { Button } from "../../components/common/Button";
 import { CardSkeleton } from "../../components/common/Skeletons";
 import { KDS_STAGE_COLORS } from "../../styles/tokens";
-import { prefersReducedMotion } from "../../motion/prefersReducedMotion";
-import gsap from "gsap";
-import { useRef, useEffect } from "react";
 
 const STAGES = ["to_cook", "preparing", "completed"];
 const stageLabels = { to_cook: "To cook", preparing: "Preparing", completed: "Done" };
 
 function KdsItem({ item, onComplete, kdsOrderId, completingId }) {
-  const ref = useRef(null);
-  const prevDone = useRef(item.isCompleted);
-
-  useEffect(() => {
-    if (item.isCompleted && !prevDone.current && ref.current && !prefersReducedMotion()) {
-      gsap.to(ref.current, { opacity: 0.55, duration: 0.4, ease: "power2.out" });
-    }
-    prevDone.current = item.isCompleted;
-  }, [item.isCompleted]);
-
   return (
-    <li
-      ref={ref}
-      className={`flex items-center justify-between text-lg ${item.isCompleted ? "kds-item-done" : ""}`}
-    >
+    <li className={`flex items-center justify-between text-lg ${item.isCompleted ? "opacity-55 line-through" : ""}`}>
       <span>{item.quantity}× {item.productName}</span>
       {!item.isCompleted && (
         <Button
@@ -56,7 +39,6 @@ function patchTicket(tickets, kdsOrderId, patch) {
 }
 
 export default function KdsDisplayPage() {
-  const { token } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [advancingId, setAdvancingId] = useState(null);
@@ -69,7 +51,7 @@ export default function KdsDisplayPage() {
     refetchInterval: 30_000,
   });
 
-  useWebSocket(token, (type, payload) => {
+  useWsEvent((type, payload) => {
     if (type === WS_EVENTS.ORDER_SENT_TO_KDS) {
       queryClient.invalidateQueries({ queryKey: ["kds-orders"] });
       return;
@@ -131,7 +113,6 @@ export default function KdsDisplayPage() {
     return String(t.order_number).includes(q) || t.table_number?.includes(q);
   });
 
-  const gridRef = useStagger(".kds-ticket", [filtered?.length]);
   const nextStage = (current) => STAGES[Math.min(STAGES.indexOf(current) + 1, STAGES.length - 1)];
 
   return (
@@ -149,11 +130,11 @@ export default function KdsDisplayPage() {
         {isLoading ? (
           <CardSkeleton count={4} />
         ) : (
-          <div ref={gridRef} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filtered?.map((ticket) => (
               <div
                 key={ticket.kds_order_id}
-                className="kds-ticket rounded-xl border-2 bg-kds-surface p-6"
+                className="rounded-xl border-2 bg-kds-surface p-6"
                 style={{ borderColor: KDS_STAGE_COLORS[ticket.stage] }}
               >
                 <div className="mb-4 flex items-start justify-between">

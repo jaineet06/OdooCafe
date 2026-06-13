@@ -1,18 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { animateModalIn, animateModalOut } from "../../hooks/useGsapAnimation";
 
 export function Drawer({ open, onClose, title, children, wide }) {
   const [mounted, setMounted] = useState(open);
-  const panelRef = useRef(null);
-  const backdropRef = useRef(null);
 
   useEffect(() => {
-    if (open) {
-      setMounted(true);
-      requestAnimationFrame(() => animateModalIn(panelRef.current, backdropRef.current));
-    } else if (mounted) {
-      animateModalOut(panelRef.current, backdropRef.current, () => setMounted(false));
+    if (open) setMounted(true);
+    else if (mounted) {
+      const t = setTimeout(() => setMounted(false), 0);
+      return () => clearTimeout(t);
     }
   }, [open, mounted]);
 
@@ -21,14 +17,12 @@ export function Drawer({ open, onClose, title, children, wide }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <button
-        ref={backdropRef}
         type="button"
         className="absolute inset-0 bg-text-primary/40"
         aria-label="Close"
         onClick={onClose}
       />
       <div
-        ref={panelRef}
         className={`relative flex h-full w-full flex-col border-l border-border-subtle bg-bg-elevated shadow-none ${wide ? "max-w-2xl" : "max-w-md"}`}
       >
         <div className="flex items-center justify-between border-b border-border-subtle px-6 py-4">

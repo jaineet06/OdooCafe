@@ -11,7 +11,6 @@ import { Button } from "../../../components/common/Button";
 import { Card } from "../../../components/common/Card";
 import { OrderStatusPill } from "../../../components/common/Badge";
 import { PageSkeleton } from "../../../components/common/Skeletons";
-import { usePageEnter } from "../../../hooks/useGsapAnimation";
 import { formatCurrency, formatDateTime } from "../../../utils/formatters";
 import { openReceiptPdf } from "../../../utils/receipt";
 
@@ -21,7 +20,6 @@ export default function OrderDetailPage() {
   const queryClient = useQueryClient();
   const { isAdmin } = useAuth();
   const { setCart, setEditingOrderId, setSelectedTable } = usePos();
-  const panelRef = usePageEnter([id]);
   const [printing, setPrinting] = useState(false);
 
   const { data: order, isLoading } = useQuery({
@@ -77,7 +75,7 @@ export default function OrderDetailPage() {
 
   return (
     <PosLayout>
-      <div ref={panelRef} className="mx-auto max-w-lg p-4 lg:p-6">
+      <div className="mx-auto max-w-lg p-4 lg:p-6">
         <Link to="/pos/orders" className="inline-flex items-center gap-1 text-sm font-medium text-accent-primary hover:underline">
           <ArrowLeft size={16} /> All orders
         </Link>

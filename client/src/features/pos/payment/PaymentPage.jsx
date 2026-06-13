@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import gsap from "gsap";
 import {
   ArrowLeft, ArrowRight, Banknote, CreditCard, Smartphone, Mail, Printer, FileText, Check,
 } from "lucide-react";
@@ -18,7 +17,6 @@ import { ReceiptDocument } from "../../../components/receipt/ReceiptDocument";
 import { StripeCardForm } from "../../../components/pos/StripeCardForm";
 import { useAwaitPayment } from "../../../hooks/useAwaitPayment";
 import { formatCurrency } from "../../../utils/formatters";
-import { celebratePayment } from "../../../utils/confetti";
 import { openReceiptPdf, openBillPdf } from "../../../utils/receipt";
 
 const STEPS = ["Review", "Method", "Payment", "Receipt"];
@@ -35,7 +33,6 @@ export default function PaymentPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { token } = useAuth();
-  const stepRef = useRef(null);
 
   const [step, setStep] = useState(0);
   const [method, setMethod] = useState(null);
@@ -76,7 +73,6 @@ export default function PaymentPage() {
     onPaid: () => {
       setCardProcessing(false);
       setPaid(true);
-      celebratePayment();
       refetch();
       setStep(3);
       toast.success("Card payment confirmed!");
@@ -86,12 +82,6 @@ export default function PaymentPage() {
   useEffect(() => {
     if (order?.status === "paid") setPaid(true);
   }, [order?.status]);
-
-  useEffect(() => {
-    if (stepRef.current) {
-      gsap.fromTo(stepRef.current, { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" });
-    }
-  }, [step]);
 
   const cashMutation = useMutation({
     mutationFn: () => paymentsApi.confirmCash({ orderId, amountTendered: Number(amountTendered) }),
@@ -125,7 +115,6 @@ export default function PaymentPage() {
 
   const finishPayment = () => {
     setPaid(true);
-    celebratePayment();
     queryClient.invalidateQueries({ queryKey: ["orders", orderId] });
     queryClient.invalidateQueries({ queryKey: ["tables"] });
     refetch();
@@ -173,7 +162,7 @@ export default function PaymentPage() {
 
         <Stepper current={step} />
 
-        <div ref={stepRef} className="mt-6">
+        <div className="mt-6">
           {step === 0 && (
             <Card>
               <h2 className="font-display text-xl text-brand-espresso">Review order</h2>

@@ -8,7 +8,9 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "migrate": "node src/db/migrations/run.js",
-    "seed": "node src/db/seeds/seed.js"
+    "seed": "node src/db/seeds/seed.js",
+    "reset": "node src/db/migrations/run.js && node src/db/seeds/seed.js",
+    "ws-test": "node scripts/ws-test.js"
   },
   "engines": {
     "node": ">=20.0.0"

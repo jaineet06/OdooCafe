@@ -83,7 +83,7 @@ export function PosLayout({
           </div>
         </header>
         <main className="flex-1">
-          <PageTransition depKey={tableLabel}>{children}</PageTransition>
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
       <SessionLockOverlay />

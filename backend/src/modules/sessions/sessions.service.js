@@ -2,6 +2,7 @@ import pool from "../../config/db.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { broadcastToAll } from "../../websocket/ws.helpers.js";
 import { WS_EVENTS } from "../../websocket/ws.events.js";
+import { broadcastTableStatusChange } from "../tables/tables.service.js";
 import { logger } from "../../utils/logger.js";
 
 export async function listSessions(tenantId) {
@@ -86,6 +87,17 @@ export async function closeSession(tenantId, sessionId, { closingBalance, force 
      GROUP BY p.method_type`,
     [sessionId, tenantId]
   );
+
+  if (force && draftOrders.rows.length > 0) {
+    await pool.query(
+      `UPDATE orders SET status = 'cancelled', updated_at = NOW()
+       WHERE session_id = $1 AND tenant_id = $2 AND status = 'draft'`,
+      [sessionId, tenantId]
+    );
+    for (const row of draftOrders.rows) {
+      if (row.table_id) await broadcastTableStatusChange(tenantId, row.table_id);
+    }
+  }
 
   const recordedClosing =
     closingBalance != null ? Number(closingBalance) : Number(revenueResult.rows[0].total_revenue);

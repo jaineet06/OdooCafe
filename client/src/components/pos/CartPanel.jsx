@@ -3,7 +3,6 @@ import { Button } from "../common/Button";
 import { Badge } from "../common/Badge";
 import { EmptyState } from "../common/EmptyState";
 import { formatCurrency } from "../../utils/formatters";
-import { usePulse } from "../../hooks/useGsapAnimation";
 
 export function CartPanel({
   cart,
@@ -23,7 +22,6 @@ export function CartPanel({
   const tax = preview?.taxTotal ?? 0;
   const total = preview?.total ?? subtotal;
   const hasDiscount = discount > 0;
-  const totalRef = usePulse([total]);
   const itemCount = cart.reduce((n, i) => n + i.quantity, 0);
 
   return (
@@ -108,7 +106,7 @@ export function CartPanel({
             <Row label="Discount" value={`-${formatCurrency(discount)}`} highlight className={previewLoading ? "opacity-50" : ""} />
           )}
           <Row label="Tax" value={formatCurrency(tax)} />
-          <div ref={totalRef} className="flex justify-between border-t border-border-subtle pt-2 text-base font-bold">
+          <div className="flex justify-between border-t border-border-subtle pt-2 text-base font-bold">
             <span className="text-brand-espresso">Total</span>
             <span className="font-display text-xl text-accent-primary">{formatCurrency(total)}</span>
           </div>

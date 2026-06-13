@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { tablesApi } from "../../api/floors.api";
 import { usePos } from "../../context/PosContext";
-import { useAuth } from "../../context/AuthContext";
-import { useWebSocket, WS_EVENTS } from "../../hooks/useWebSocket";
-import { useGsapEntrance } from "../../hooks/useGsapAnimation";
+import { useWsEvent } from "../../context/WebSocketContext";
+import { WS_EVENTS } from "../../utils/constants";
 import { PosLayout } from "../../components/layout/PosLayout";
 import { CardSkeleton } from "../../components/common/Skeletons";
 import { TableFloorPlan } from "../../components/pos/TableFloorPlan";
@@ -13,9 +12,7 @@ import { TableFloorPlan } from "../../components/pos/TableFloorPlan";
 export default function TableViewPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { token } = useAuth();
   const { setSelectedTable } = usePos();
-  const pageRef = useGsapEntrance([]);
 
   const { data: tables, isLoading } = useQuery({
     queryKey: ["tables"],
@@ -23,7 +20,7 @@ export default function TableViewPage() {
     refetchInterval: 30_000,
   });
 
-  useWebSocket(token, (type) => {
+  useWsEvent((type) => {
     if (type === WS_EVENTS.TABLE_STATUS_CHANGED || type === WS_EVENTS.ORDER_PAID) {
       queryClient.invalidateQueries({ queryKey: ["tables"] });
     }
@@ -58,7 +55,7 @@ export default function TableViewPage() {
 
   return (
     <PosLayout>
-      <div ref={pageRef} className="p-4 lg:p-8">
+      <div className="p-4 lg:p-8">
         <div className="mb-8">
           <h1 className="font-display text-3xl text-brand-espresso">Floor plan</h1>
           <p className="mt-1 text-sm text-text-muted">Tap a table to seat guests or view open orders</p>
@@ -67,7 +64,7 @@ export default function TableViewPage() {
         {isLoading ? (
           <CardSkeleton count={12} />
         ) : (
-          <TableFloorPlan tables={tables} grouped={grouped} onSelectTable={handleTable} stats={stats} />
+          <TableFloorPlan grouped={grouped} onSelectTable={handleTable} stats={stats} />
         )}
       </div>
     </PosLayout>

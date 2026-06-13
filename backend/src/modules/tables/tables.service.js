@@ -108,6 +108,14 @@ export async function updateTable(tenantId, id, data) {
     }
   }
 
+  if (fields.length === 0) {
+    const current = await pool.query(
+      `SELECT * FROM tables WHERE tenant_id = $1 AND id = $2`,
+      [tenantId, id]
+    );
+    return current.rows[0];
+  }
+
   const result = await pool.query(
     `UPDATE tables SET ${fields.join(", ")} WHERE tenant_id = $1 AND id = $2 RETURNING *`,
     values

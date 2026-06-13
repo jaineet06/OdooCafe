@@ -1,4 +1,3 @@
-import { useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   BarChart3,
@@ -17,7 +16,6 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { animateSidebar } from "../../hooks/useGsapAnimation";
 
 const ICON = { size: 18, strokeWidth: 1.75 };
 
@@ -91,11 +89,6 @@ const posNav = [
 export function Sidebar({ variant, collapsed, onToggleCollapse, mobileOpen, onMobileClose }) {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const asideRef = useRef(null);
-
-  useEffect(() => {
-    if (asideRef.current) animateSidebar(asideRef.current, collapsed);
-  }, [collapsed]);
 
   const handleLogout = () => {
     logout();
@@ -105,8 +98,7 @@ export function Sidebar({ variant, collapsed, onToggleCollapse, mobileOpen, onMo
   function SidebarPanel({ isCollapsed }) {
     return (
       <aside
-        ref={asideRef}
-        className={`flex h-full flex-col border-r border-border-subtle bg-bg-elevated ${isCollapsed ? "w-[4.25rem]" : "w-56"}`}
+        className={`flex h-full flex-col border-r border-border-subtle bg-bg-elevated transition-all duration-200 ${isCollapsed ? "w-[4.25rem]" : "w-56"}`}
       >
         <div className="flex h-14 items-center justify-between border-b border-border-subtle px-3">
           {!isCollapsed && <span className="truncate font-display text-lg text-brand-espresso">Odoo Cafe</span>}

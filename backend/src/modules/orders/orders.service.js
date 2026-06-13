@@ -120,8 +120,9 @@ export async function listOrders(tenantId, query) {
             (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
             (SELECT string_agg(sub.product_name, ', ')
              FROM (
-               SELECT oi.product_name
+               SELECT p.name AS product_name
                FROM order_items oi
+               JOIN products p ON p.id = oi.product_id
                WHERE oi.order_id = o.id
                ORDER BY oi.id
                LIMIT 3
@@ -264,6 +265,9 @@ export async function updateOrder(tenantId, id, data) {
 
     await saveOrderDiscounts(client, tenantId, id, applied);
     await client.query("COMMIT");
+
+    if (data.tableId) await broadcastTableStatusChange(tenantId, data.tableId);
+
     return getOrderById(tenantId, id);
   } catch (err) {
     await client.query("ROLLBACK");

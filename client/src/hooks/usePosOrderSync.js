@@ -1,13 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "../context/AuthContext";
-import { useWebSocket, WS_EVENTS } from "./useWebSocket";
+import { useWsEvent } from "../context/WebSocketContext";
+import { WS_EVENTS } from "../utils/constants";
 
 /** Keep POS order lists/details in sync with KDS + table + payment events. */
 export function usePosOrderSync() {
-  const { token } = useAuth();
   const queryClient = useQueryClient();
 
-  useWebSocket(token, (type, payload) => {
+  useWsEvent((type, payload) => {
     if (type === WS_EVENTS.KDS_STAGE_UPDATED && payload?.orderId) {
       queryClient.setQueryData(["orders", payload.orderId], (old) =>
         old ? { ...old, kds_stage: payload.newStage } : old

@@ -1,38 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { animateModalIn, animateModalOut } from "../../hooks/useGsapAnimation";
 
 export function Modal({ open, onClose, title, children, wide, size = "md" }) {
   const [mounted, setMounted] = useState(open);
-  const backdropRef = useRef(null);
-  const panelRef = useRef(null);
 
   const widths = { sm: "max-w-md", md: "max-w-lg", lg: "max-w-2xl", xl: "max-w-3xl" };
   const maxW = wide ? widths.lg : widths[size] || widths.md;
 
   useEffect(() => {
-    if (open) {
-      setMounted(true);
-      requestAnimationFrame(() => {
-        animateModalIn(panelRef.current, backdropRef.current);
-      });
-    } else if (mounted) {
-      animateModalOut(panelRef.current, backdropRef.current, () => setMounted(false));
+    if (open) setMounted(true);
+    else if (mounted) {
+      const t = setTimeout(() => setMounted(false), 0);
+      return () => clearTimeout(t);
     }
-  }, [open]);
+  }, [open, mounted]);
 
   if (!mounted) return null;
 
   return (
     <div
-      ref={backdropRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-text-primary/40 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        ref={panelRef}
         className={`max-h-[90vh] w-full overflow-y-auto rounded-2xl border border-border-subtle bg-bg-elevated p-6 ${maxW}`}
         onClick={(e) => e.stopPropagation()}
       >

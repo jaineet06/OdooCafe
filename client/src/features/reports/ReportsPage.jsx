@@ -16,7 +16,6 @@ import { AnimatedNumber } from "../../components/common/AnimatedNumber";
 import { OrderStatusPill } from "../../components/common/Badge";
 import { formatCurrency } from "../../utils/formatters";
 import { CHART_COLORS, KDS_STAGE_COLORS } from "../../styles/tokens";
-import { usePageEnter } from "../../hooks/useGsapAnimation";
 
 const STATUS_COLORS = { draft: CHART_COLORS.tertiary, paid: CHART_COLORS.secondary, cancelled: "#b54040" };
 
@@ -25,7 +24,6 @@ export default function ReportsPage() {
   const [exporting, setExporting] = useState(null);
   const debouncedPeriod = useDebounce(period, 300);
   const params = { period: debouncedPeriod };
-  const pageRef = usePageEnter([debouncedPeriod]);
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ["reports", "dashboard", debouncedPeriod],
@@ -94,7 +92,7 @@ export default function ReportsPage() {
 
   return (
     <AdminLayout title="Dashboard" wide>
-      <div ref={pageRef} className="space-y-8">
+      <div className="space-y-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Tabs
             value={period}
