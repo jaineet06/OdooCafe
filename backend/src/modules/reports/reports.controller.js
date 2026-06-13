@@ -27,6 +27,11 @@ export async function topOrders(req, res) {
   return res.json({ success: true, message: "Success", data });
 }
 
+export async function orderStatus(req, res) {
+  const data = await service.getOrderStatusAnalytics(req.tenantId);
+  return res.json({ success: true, message: "Success", data });
+}
+
 export async function exportReport(req, res) {
   const data = await service.getExportData(req.tenantId, req.query);
   const format = req.query.format || "pdf";

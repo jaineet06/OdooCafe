@@ -11,7 +11,7 @@ const router = Router();
 
 router.use(authMiddleware, tenantMiddleware);
 
-router.get("/", rbac("admin"), asyncHandler(controller.list));
+router.get("/", rbac("admin", "employee"), asyncHandler(controller.list));
 router.post("/", rbac("admin"), validate(createCouponSchema), asyncHandler(controller.create));
 router.post("/validate", rbac("admin", "employee"), validate(validateCouponSchema), asyncHandler(controller.validate));
 router.put("/:id", rbac("admin"), validate(updateCouponSchema), asyncHandler(controller.update));

@@ -1,6 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
+import { getCorsOrigin } from "./config/cors.js";
 import { morganMiddleware } from "./utils/logger.js";
 import { rateLimiter } from "./middleware/rateLimiter.middleware.js";
 import { errorHandler } from "./middleware/errorHandler.middleware.js";
@@ -26,7 +27,7 @@ export function createApp() {
   const app = express();
 
   app.use(helmet());
-  app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+  app.use(cors({ origin: getCorsOrigin(), credentials: true }));
   app.use(morganMiddleware);
   app.use(rateLimiter);
 

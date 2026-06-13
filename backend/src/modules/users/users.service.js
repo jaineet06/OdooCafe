@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { pool } from "../../config/db.js";
+import pool from "../../config/db.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { logger } from "../../utils/logger.js";
 

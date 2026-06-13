@@ -19,3 +19,8 @@ export const updateOrderSchema = Joi.object({
   items: Joi.array().items(orderItemSchema).min(1).required(),
   couponCode: Joi.string().allow(null, ""),
 });
+
+export const previewOrderSchema = Joi.object({
+  items: Joi.array().items(orderItemSchema).min(1).required(),
+  couponCode: Joi.string().allow(null, ""),
+});

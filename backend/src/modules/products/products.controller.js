@@ -12,12 +12,14 @@ export async function getById(req, res) {
 }
 
 export async function create(req, res) {
-  const data = await productsService.createProduct(req.tenantId, req.body, req.imageUrl);
+  const imageUrl = req.imageUrl || req.body.imageUrl || null;
+  const data = await productsService.createProduct(req.tenantId, req.body, imageUrl);
   return ApiResponse.created(res, data);
 }
 
 export async function update(req, res) {
-  const data = await productsService.updateProduct(req.tenantId, req.params.id, req.body, req.imageUrl);
+  const imageUrl = req.imageUrl || req.body.imageUrl || null;
+  const data = await productsService.updateProduct(req.tenantId, req.params.id, req.body, imageUrl);
   return ApiResponse.success(res, data);
 }
 

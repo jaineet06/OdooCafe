@@ -24,21 +24,21 @@ const CATEGORIES = [
 ];
 
 const PRODUCTS = [
-  { name: "Espresso", category: "Beverages", price: 120, tax: 5, kds: false },
-  { name: "Cappuccino", category: "Beverages", price: 150, tax: 5, kds: false },
-  { name: "Iced Latte", category: "Beverages", price: 180, tax: 5, kds: false },
-  { name: "Fresh Orange Juice", category: "Beverages", price: 140, tax: 5, kds: false },
-  { name: "Croissant", category: "Snacks", price: 90, tax: 5, kds: true },
-  { name: "Garlic Bread", category: "Snacks", price: 110, tax: 5, kds: true },
-  { name: "Club Sandwich", category: "Snacks", price: 220, tax: 12, kds: true },
-  { name: "Caesar Salad", category: "Mains", price: 280, tax: 12, kds: true },
-  { name: "Margherita Pizza", category: "Mains", price: 350, tax: 12, kds: true },
-  { name: "Pasta Alfredo", category: "Mains", price: 320, tax: 12, kds: true },
-  { name: "Grilled Chicken", category: "Mains", price: 380, tax: 12, kds: true },
-  { name: "Cheesecake", category: "Desserts", price: 200, tax: 12, kds: true },
-  { name: "Chocolate Brownie", category: "Desserts", price: 160, tax: 12, kds: true },
-  { name: "Tiramisu", category: "Desserts", price: 240, tax: 12, kds: true },
-  { name: "Chef Special Platter", category: "Specials", price: 550, tax: 12, kds: true },
+  { name: "Espresso", category: "Beverages", price: 120, tax: 5, kds: false, image: "https://images.unsplash.com/photo-1510591509098-fd97982945b4?w=400&h=300&fit=crop" },
+  { name: "Cappuccino", category: "Beverages", price: 150, tax: 5, kds: false, image: "https://images.unsplash.com/photo-1572442385786-08368e1f5103?w=400&h=300&fit=crop" },
+  { name: "Iced Latte", category: "Beverages", price: 180, tax: 5, kds: false, image: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=300&fit=crop" },
+  { name: "Fresh Orange Juice", category: "Beverages", price: 140, tax: 5, kds: false, image: "https://images.unsplash.com/photo-1621506279837-caa3aa2f417e?w=400&h=300&fit=crop" },
+  { name: "Croissant", category: "Snacks", price: 90, tax: 5, kds: true, image: "https://images.unsplash.com/photo-1555507036-ab794f1bc09?w=400&h=300&fit=crop" },
+  { name: "Garlic Bread", category: "Snacks", price: 110, tax: 5, kds: true, image: "https://images.unsplash.com/photo-1573140405366-6f6e7c0e2d1f?w=400&h=300&fit=crop" },
+  { name: "Club Sandwich", category: "Snacks", price: 220, tax: 12, kds: true, image: "https://images.unsplash.com/photo-1528735609216-77b0a7d4e6b4?w=400&h=300&fit=crop" },
+  { name: "Caesar Salad", category: "Mains", price: 280, tax: 12, kds: true, image: "https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400&h=300&fit=crop" },
+  { name: "Margherita Pizza", category: "Mains", price: 350, tax: 12, kds: true, image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&h=300&fit=crop" },
+  { name: "Pasta Alfredo", category: "Mains", price: 320, tax: 12, kds: true, image: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&h=300&fit=crop" },
+  { name: "Grilled Chicken", category: "Mains", price: 380, tax: 12, kds: true, image: "https://images.unsplash.com/photo-1598103442097-8b74394e95a4?w=400&h=300&fit=crop" },
+  { name: "Cheesecake", category: "Desserts", price: 200, tax: 12, kds: true, image: "https://images.unsplash.com/photo-1524351199428-8f4b7892aefb?w=400&h=300&fit=crop" },
+  { name: "Chocolate Brownie", category: "Desserts", price: 160, tax: 12, kds: true, image: "https://images.unsplash.com/photo-1607924482614-99472d5b0c64?w=400&h=300&fit=crop" },
+  { name: "Tiramisu", category: "Desserts", price: 240, tax: 12, kds: true, image: "https://images.unsplash.com/photo-1571877227200-a4d21dd04d39?w=400&h=300&fit=crop" },
+  { name: "Chef Special Platter", category: "Specials", price: 550, tax: 12, kds: true, image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&h=300&fit=crop" },
 ];
 
 async function seedTenant(client, tenantInfo) {
@@ -88,9 +88,9 @@ async function seedTenant(client, tenantInfo) {
   const productMap = {};
   for (const prod of PRODUCTS) {
     const res = await client.query(
-      `INSERT INTO products (tenant_id, category_id, name, price, tax_rate, is_kds_visible)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [tenantId, categoryMap[prod.category], prod.name, prod.price, prod.tax, prod.kds]
+      `INSERT INTO products (tenant_id, category_id, name, price, tax_rate, is_kds_visible, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [tenantId, categoryMap[prod.category], prod.name, prod.price, prod.tax, prod.kds, prod.image]
     );
     productMap[prod.name] = { id: res.rows[0].id, ...prod };
   }

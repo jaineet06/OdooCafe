@@ -7,6 +7,13 @@ export async function downloadPDF(req, res) {
   return res.send(pdfBuffer);
 }
 
+export async function downloadBillPDF(req, res) {
+  const pdfBuffer = await service.generateBillPDF(req.tenantId, req.params.orderId);
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `attachment; filename=bill-${req.params.orderId}.pdf`);
+  return res.send(pdfBuffer);
+}
+
 export async function emailReceipt(req, res) {
   const data = await service.emailReceipt(req.tenantId, req.params.orderId, req.body.email);
   return res.json({ success: true, message: "Receipt sent", data });

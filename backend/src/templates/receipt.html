@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Receipt — {{tenantName}}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f0e8;font-family:Arial,Helvetica,sans-serif;color:#2c2c2c;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f0e8;padding:24px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#faf8f4;border:1px solid #d9d0c4;border-radius:8px;overflow:hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="padding:32px 32px 16px;text-align:center;background-color:#3b2314;color:#f5f0e8;">
+              {{#if logoUrl}}
+              <img src="{{logoUrl}}" alt="{{tenantName}}" width="80" style="display:block;margin:0 auto 12px;border-radius:4px;" />
+              {{/if}}
+              <h1 style="margin:0;font-size:24px;font-weight:normal;">{{tenantName}}</h1>
+              <p style="margin:8px 0 0;font-size:14px;opacity:0.85;">Order #{{orderNumber}}</p>
+              <p style="margin:4px 0 0;font-size:13px;opacity:0.7;">{{orderDate}}</p>
+            </td>
+          </tr>
+          <!-- Items -->
+          <tr>
+            <td style="padding:24px 32px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                <tr style="border-bottom:2px solid #d9d0c4;">
+                  <th align="left" style="padding:8px 0;font-size:12px;text-transform:uppercase;color:#4a4a4a;">Item</th>
+                  <th align="center" style="padding:8px 0;font-size:12px;text-transform:uppercase;color:#4a4a4a;">Qty</th>
+                  <th align="right" style="padding:8px 0;font-size:12px;text-transform:uppercase;color:#4a4a4a;">Price</th>
+                  <th align="right" style="padding:8px 0;font-size:12px;text-transform:uppercase;color:#4a4a4a;">Total</th>
+                </tr>
+                {{itemsRows}}
+              </table>
+            </td>
+          </tr>
+          <!-- Discounts -->
+          {{discountsSection}}
+          <!-- Totals -->
+          <tr>
+            <td style="padding:0 32px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:4px 0;font-size:14px;">Subtotal</td>
+                  <td align="right" style="padding:4px 0;font-size:14px;">{{subtotal}}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 0;font-size:14px;">Discount</td>
+                  <td align="right" style="padding:4px 0;font-size:14px;color:#c25b3a;">-{{discountTotal}}</td>
+                </tr>
+                <tr>
+                  <td style="padding:4px 0;font-size:14px;">Tax</td>
+                  <td align="right" style="padding:4px 0;font-size:14px;">{{taxTotal}}</td>
+                </tr>
+                <tr style="border-top:2px solid #3b2314;">
+                  <td style="padding:12px 0 4px;font-size:18px;font-weight:bold;">Total</td>
+                  <td align="right" style="padding:12px 0 4px;font-size:18px;font-weight:bold;color:#c25b3a;">{{total}}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Payment -->
+          <tr>
+            <td style="padding:16px 32px 32px;text-align:center;background-color:#ebe4d8;">
+              <p style="margin:0;font-size:14px;">Paid via <strong>{{paymentMethod}}</strong></p>
+              <p style="margin:12px 0 0;font-size:13px;color:#4a4a4a;">Thank you for dining with us!</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

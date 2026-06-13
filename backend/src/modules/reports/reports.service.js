@@ -1,4 +1,4 @@
-import { pool } from "../../config/db.js";
+import pool from "../../config/db.js";
 
 function getDateRange(period, startDate, endDate) {
   const now = new Date();
@@ -132,6 +132,65 @@ export async function getTopOrders(tenantId, query) {
     params
   );
   return result.rows;
+}
+
+export async function getOrderStatusAnalytics(tenantId) {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [ordersRes, kdsRes, tablesRes, recentRes] = await Promise.all([
+    pool.query(
+      `SELECT status, COUNT(*)::int AS count
+       FROM orders WHERE tenant_id = $1 AND created_at >= $2
+       GROUP BY status`,
+      [tenantId, todayStart.toISOString()]
+    ),
+    pool.query(
+      `SELECT ko.stage, COUNT(*)::int AS count
+       FROM kds_orders ko
+       JOIN orders o ON o.id = ko.order_id AND o.tenant_id = ko.tenant_id
+       WHERE ko.tenant_id = $1 AND o.status = 'draft' AND ko.stage != 'completed'
+       GROUP BY ko.stage`,
+      [tenantId]
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS occupied
+       FROM tables t
+       WHERE t.tenant_id = $1 AND t.is_active = TRUE
+         AND EXISTS (
+           SELECT 1 FROM orders o
+           WHERE o.table_id = t.id AND o.tenant_id = t.tenant_id AND o.status = 'draft'
+         )`,
+      [tenantId]
+    ),
+    pool.query(
+      `SELECT o.id, o.order_number, o.status, o.total, o.created_at,
+              t.table_number, ko.stage AS kds_stage
+       FROM orders o
+       LEFT JOIN tables t ON t.id = o.table_id
+       LEFT JOIN kds_orders ko ON ko.order_id = o.id
+       WHERE o.tenant_id = $1 AND o.created_at >= $2 AND o.status != 'cancelled'
+       ORDER BY o.created_at DESC LIMIT 12`,
+      [tenantId, todayStart.toISOString()]
+    ),
+  ]);
+
+  const byStatus = { draft: 0, paid: 0, cancelled: 0 };
+  for (const row of ordersRes.rows) {
+    byStatus[row.status] = row.count;
+  }
+
+  const kdsPipeline = { to_cook: 0, preparing: 0, completed: 0 };
+  for (const row of kdsRes.rows) {
+    kdsPipeline[row.stage] = row.count;
+  }
+
+  return {
+    byStatus,
+    kdsPipeline,
+    tablesOccupied: tablesRes.rows[0]?.occupied || 0,
+    recentOrders: recentRes.rows,
+  };
 }
 
 export async function getExportData(tenantId, query) {

@@ -14,6 +14,7 @@ router.post("/webhook", asyncHandler(controller.webhook));
 router.use(authMiddleware, tenantMiddleware);
 
 router.post("/create-intent", rbac("admin", "employee"), validate(createIntentSchema), asyncHandler(controller.createIntent));
+router.get("/config", asyncHandler(controller.config));
 router.get("/upi-qr/:orderId", asyncHandler(controller.upiQR));
 router.post("/confirm-cash", rbac("admin", "employee"), validate(confirmCashSchema), asyncHandler(controller.confirmCash));
 router.post("/confirm-upi", rbac("admin", "employee"), validate(confirmUpiSchema), asyncHandler(controller.confirmUpi));

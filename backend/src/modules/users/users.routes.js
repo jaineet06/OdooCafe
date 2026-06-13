@@ -9,13 +9,13 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const router = Router();
 
-router.use(authMiddleware, tenantMiddleware, rbac("admin"));
+router.use(authMiddleware, tenantMiddleware);
 
-router.get("/", asyncHandler(controller.list));
-router.post("/", validate(createUserSchema), asyncHandler(controller.create));
-router.get("/:id", asyncHandler(controller.getById));
-router.patch("/:id/password", validate(changePasswordSchema), asyncHandler(controller.changePassword));
-router.patch("/:id/archive", asyncHandler(controller.toggleArchive));
-router.delete("/:id", asyncHandler(controller.remove));
+router.get("/", rbac("admin", "employee"), asyncHandler(controller.list));
+router.get("/:id", rbac("admin", "employee"), asyncHandler(controller.getById));
+router.post("/", rbac("admin"), validate(createUserSchema), asyncHandler(controller.create));
+router.patch("/:id/password", rbac("admin"), validate(changePasswordSchema), asyncHandler(controller.changePassword));
+router.patch("/:id/archive", rbac("admin"), asyncHandler(controller.toggleArchive));
+router.delete("/:id", rbac("admin"), asyncHandler(controller.remove));
 
 export default router;

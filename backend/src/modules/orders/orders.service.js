@@ -1,10 +1,12 @@
-import { pool } from "../../config/db.js";
+import pool from "../../config/db.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { calculateOrderTotals } from "../../utils/taxCalculator.js";
 import { getActivePromotions, evaluatePromotions } from "../promotions/promotions.service.js";
 import { validateCoupon } from "../coupons/coupons.service.js";
 import { broadcastToKDS } from "../../websocket/ws.helpers.js";
 import { WS_EVENTS } from "../../websocket/ws.events.js";
+import { broadcastTableStatusChange } from "../tables/tables.service.js";
+import { assertSessionOpen, assertOrderSessionOpen } from "../sessions/sessionGuards.js";
 import { getPagination, paginationMeta } from "../../utils/pagination.js";
 import { logger } from "../../utils/logger.js";
 
@@ -74,6 +76,20 @@ async function saveOrderDiscounts(client, tenantId, orderId, applied) {
   }
 }
 
+export async function previewOrder(tenantId, body) {
+  const productIds = body.items.map((i) => i.productId);
+  const productMap = await fetchProductPrices(tenantId, productIds);
+  const orderItems = await buildOrderItems(tenantId, body.items, productMap);
+  const { totals, applied } = await computeOrderTotals(tenantId, orderItems, body.couponCode || null);
+  return {
+    subtotal: totals.subtotal,
+    taxTotal: totals.taxTotal,
+    discountTotal: totals.discountTotal,
+    total: totals.total,
+    appliedDiscounts: applied,
+  };
+}
+
 export async function listOrders(tenantId, query) {
   const { page, limit, offset } = getPagination(query);
   const conditions = ["o.tenant_id = $1"];
@@ -99,8 +115,22 @@ export async function listOrders(tenantId, query) {
 
   params.push(limit, offset);
   const result = await pool.query(
-    `SELECT o.*, t.table_number FROM orders o
+    `SELECT o.*, t.table_number, c.name AS customer_name, u.name AS employee_name,
+            ko.stage AS kds_stage,
+            (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
+            (SELECT string_agg(sub.product_name, ', ')
+             FROM (
+               SELECT oi.product_name
+               FROM order_items oi
+               WHERE oi.order_id = o.id
+               ORDER BY oi.id
+               LIMIT 3
+             ) sub) AS item_preview
+     FROM orders o
      LEFT JOIN tables t ON t.id = o.table_id
+     LEFT JOIN customers c ON c.id = o.customer_id
+     LEFT JOIN users u ON u.id = o.created_by
+     LEFT JOIN kds_orders ko ON ko.order_id = o.id AND ko.tenant_id = o.tenant_id
      WHERE ${where} ORDER BY o.created_at DESC LIMIT $${idx++} OFFSET $${idx}`,
     params
   );
@@ -110,10 +140,11 @@ export async function listOrders(tenantId, query) {
 
 export async function getOrderById(tenantId, id) {
   const orderResult = await pool.query(
-    `SELECT o.*, t.table_number, c.name AS customer_name
+    `SELECT o.*, t.table_number, c.name AS customer_name, ko.stage AS kds_stage
      FROM orders o
      LEFT JOIN tables t ON t.id = o.table_id
      LEFT JOIN customers c ON c.id = o.customer_id
+     LEFT JOIN kds_orders ko ON ko.order_id = o.id AND ko.tenant_id = o.tenant_id
      WHERE o.id = $1 AND o.tenant_id = $2`,
     [id, tenantId]
   );
@@ -135,11 +166,7 @@ export async function getOrderById(tenantId, id) {
 }
 
 export async function createOrder(tenantId, userId, data) {
-  const session = await pool.query(
-    `SELECT id FROM sessions WHERE id = $1 AND tenant_id = $2 AND status = 'open'`,
-    [data.sessionId, tenantId]
-  );
-  if (session.rows.length === 0) throw new ApiError(400, "Session is not open");
+  await assertSessionOpen(tenantId, data.sessionId);
 
   const productIds = data.items.map((i) => i.productId);
   const productMap = await fetchProductPrices(tenantId, productIds);
@@ -178,6 +205,8 @@ export async function createOrder(tenantId, userId, data) {
     await saveOrderDiscounts(client, tenantId, order.id, applied);
     await client.query("COMMIT");
 
+    if (data.tableId) await broadcastTableStatusChange(tenantId, data.tableId);
+
     logger.info("Order created", { tenantId, orderId: order.id });
     return getOrderById(tenantId, order.id);
   } catch (err) {
@@ -195,6 +224,8 @@ export async function updateOrder(tenantId, id, data) {
   );
   if (existing.rows.length === 0) throw new ApiError(404, "Order not found");
   if (existing.rows[0].status !== "draft") throw new ApiError(400, "Only draft orders can be updated");
+
+  await assertOrderSessionOpen(tenantId, id);
 
   const productIds = data.items.map((i) => i.productId);
   const productMap = await fetchProductPrices(tenantId, productIds);
@@ -243,6 +274,7 @@ export async function updateOrder(tenantId, id, data) {
 }
 
 export async function sendToKDS(tenantId, orderId) {
+  await assertOrderSessionOpen(tenantId, orderId);
   const order = await getOrderById(tenantId, orderId);
   if (order.status === "cancelled") throw new ApiError(400, "Cannot send cancelled order to KDS");
 
@@ -293,11 +325,14 @@ export async function sendToKDS(tenantId, orderId) {
 }
 
 export async function cancelOrder(tenantId, id) {
+  await assertOrderSessionOpen(tenantId, id);
   const result = await pool.query(
     `UPDATE orders SET status = 'cancelled', updated_at = NOW()
      WHERE id = $2 AND tenant_id = $1 AND status = 'draft' RETURNING *`,
     [tenantId, id]
   );
   if (result.rows.length === 0) throw new ApiError(400, "Order not found or cannot be cancelled");
-  return result.rows[0];
+  const order = result.rows[0];
+  if (order.table_id) await broadcastTableStatusChange(tenantId, order.table_id);
+  return order;
 }

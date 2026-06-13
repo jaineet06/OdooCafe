@@ -4,9 +4,9 @@ import { logger } from "../utils/logger.js";
 
 const { Pool } = pg;
 
-export const pool = new Pool({
+const pool = new Pool({
   connectionString: env.DATABASE_URL,
-  ssl: env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  ssl: env.DATABASE_URL.includes("neon.tech") ? { rejectUnauthorized: false } : false,
 });
 
 pool.on("error", (err) => {
@@ -16,3 +16,5 @@ pool.on("error", (err) => {
 export async function query(text, params) {
   return pool.query(text, params);
 }
+
+export default pool;

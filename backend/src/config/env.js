@@ -17,11 +17,12 @@ const envSchema = Joi.object({
   CLOUDINARY_API_SECRET: Joi.string().required(),
   STRIPE_SECRET_KEY: Joi.string().required(),
   STRIPE_WEBHOOK_SECRET: Joi.string().required(),
-  SMTP_HOST: Joi.string().default("smtp.gmail.com"),
+  STRIPE_PUBLISHABLE_KEY: Joi.string().allow("").default(""),
+  SMTP_HOST: Joi.string().default("smtp-relay.brevo.com"),
   SMTP_PORT: Joi.number().default(587),
-  SMTP_USER: Joi.string().allow("").default(""),
-  SMTP_PASS: Joi.string().allow("").default(""),
-  SMTP_FROM: Joi.string().default("Odoo Cafe POS <noreply@odoocafe.com>"),
+  SMTP_USER: Joi.string().required(),
+  SMTP_PASS: Joi.string().required(),
+  SMTP_FROM: Joi.string().required(),
 }).unknown(true);
 
 const { error, value } = envSchema.validate(process.env, { abortEarly: false });

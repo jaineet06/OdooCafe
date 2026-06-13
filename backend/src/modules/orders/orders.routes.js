@@ -1,6 +1,6 @@
 import { Router } from "express";
 import * as controller from "./orders.controller.js";
-import { createOrderSchema, updateOrderSchema } from "./orders.validation.js";
+import { createOrderSchema, updateOrderSchema, previewOrderSchema } from "./orders.validation.js";
 import { authMiddleware } from "../../middleware/auth.middleware.js";
 import { tenantMiddleware } from "../../middleware/tenant.middleware.js";
 import { rbac } from "../../middleware/rbac.middleware.js";
@@ -12,6 +12,7 @@ const router = Router();
 router.use(authMiddleware, tenantMiddleware);
 
 router.get("/", asyncHandler(controller.list));
+router.post("/preview", rbac("admin", "employee"), validate(previewOrderSchema), asyncHandler(controller.preview));
 router.post("/", rbac("admin", "employee"), validate(createOrderSchema), asyncHandler(controller.create));
 router.get("/:id", asyncHandler(controller.getById));
 router.put("/:id", rbac("admin", "employee"), validate(updateOrderSchema), asyncHandler(controller.update));

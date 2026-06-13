@@ -132,7 +132,8 @@ odoo-cafe-pos/
 │   ├── server.js                      # HTTP + WS server entry point
 │   ├── .env.example
 │   └── package.json
-├── frontend/                          # React + Tailwind (scaffold only in this phase)
+├── client/                            # React + Tailwind frontend (Phase 2)
+│   └── src/                           # See frontend-context.md
 └── README.md
 ```
 
@@ -142,7 +143,7 @@ odoo-cafe-pos/
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, Tailwind CSS, React Router v6, Zustand |
+| Frontend | React 18, Vite, Tailwind CSS v4, React Router v6, TanStack Query |
 | Backend | Node.js 20 LTS, Express 5 |
 | Database | Neon (serverless PostgreSQL) via `pg` |
 | File Storage | Cloudinary |
@@ -238,11 +239,24 @@ npm run seed         # populates dummy data
 npm run dev          # nodemon + winston logging
 ```
 
+### Frontend Setup
+
+```bash
+cd client
+npm install
+cp .env.example .env
+npm run dev          # Vite dev server at http://localhost:5173
+```
+
+Set `FRONTEND_URL=http://localhost:5173` in backend `.env` for CORS.
+
+See **[frontend-context.md](./frontend-context.md)** for design tokens, architecture, and feature status.
+
 ### Environment Variables
 
 ```env
 # Server
-PORT=5000
+PORT=5001
 NODE_ENV=development
 
 # Neon
@@ -262,8 +276,8 @@ CLOUDINARY_API_SECRET=
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Email
-SMTP_HOST=smtp.gmail.com
+# Email (Brevo SMTP)
+SMTP_HOST=smtp-relay.brevo.com
 SMTP_PORT=587
 SMTP_USER=
 SMTP_PASS=
@@ -275,7 +289,76 @@ RATE_LIMIT_MAX=100
 
 ---
 
-## 📊 API Reference Summary
+## ✅ Backend: Phase 1 — COMPLETE
+
+| Feature | Status |
+|---|---|
+| Multi-tenant auth (JWT, RBAC, KDS tokens) | ✅ |
+| All REST modules (products → receipts) | ✅ |
+| WebSocket real-time events | ✅ |
+| Stripe webhook (`payment_intent.succeeded/failed/canceled`) | ✅ |
+| HTML email receipts (inline CSS + plain-text fallback + PDF attach) | ✅ |
+| PDF/XLS report export | ✅ |
+| Seed data (2 tenants) | ✅ |
+
+### Stripe webhook (local test)
+
+```bash
+stripe listen --forward-to localhost:5001/api/payments/webhook
+stripe trigger payment_intent.succeeded
+```
+
+---
+
+## 🖥 Frontend (Phase 2)
+
+### Tech stack
+
+React 18, Vite, Tailwind CSS v4, React Router v6, TanStack Query, Axios, react-hook-form + Joi, react-hot-toast, react-loading-skeleton, Recharts, native WebSocket.
+
+### Run
+
+```bash
+cd client
+npm install
+cp .env.example .env
+npm run dev    # http://localhost:5173
+```
+
+### Env vars
+
+```env
+VITE_API_BASE_URL=http://localhost:5001/api
+VITE_WS_URL=ws://localhost:5001
+```
+
+See **[frontend-context.md](./frontend-context.md)** for design tokens, architecture, and gaps.
+
+### Role-based routing
+
+| Role | Landing page | Access |
+|------|--------------|--------|
+| Admin | `/admin/reports` | Admin panel + POS terminal |
+| Employee | `/pos` | POS terminal only |
+| KDS device | `/kds` | Kitchen display only (logout via header) |
+
+### Module completion
+
+| Module | Status |
+|---|---|
+| Auth (login/signup, guards) | ✅ |
+| Admin panel + POS sidebar layouts | ✅ |
+| Role-separated routing (`/admin/*`, `/pos/*`, `/kds`) | ✅ |
+| Products / Categories admin | ✅ |
+| Payment methods / Floors / Coupons / Users | ✅ |
+| KDS register + display (with logout) | ✅ |
+| POS (session, order, payment, customers, tables) | ✅ |
+| Reports dashboard + export | ✅ |
+| Stripe Elements card UI | ⏳ Pending |
+| Product image upload UI | ⏳ Pending |
+| POS WebSocket live updates | ⏳ Pending |
+
+---
 
 ### Auth
 | Method | Route | Access | Description |

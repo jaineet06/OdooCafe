@@ -1,4 +1,4 @@
-import { pool } from "../../config/db.js";
+import pool from "../../config/db.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { broadcastToAll } from "../../websocket/ws.helpers.js";
 import { WS_EVENTS } from "../../websocket/ws.events.js";
@@ -49,22 +49,37 @@ export async function openSession(tenantId, userId, openingBalance = 0) {
   return result.rows[0];
 }
 
-export async function closeSession(tenantId, sessionId) {
+export async function closeSession(tenantId, sessionId, { closingBalance, force = false } = {}) {
   const session = await pool.query(
     `SELECT * FROM sessions WHERE id = $1 AND tenant_id = $2 AND status = 'open'`,
     [sessionId, tenantId]
   );
   if (session.rows.length === 0) throw new ApiError(404, "Open session not found");
 
+  const draftOrders = await pool.query(
+    `SELECT o.id, o.order_number, o.table_id, t.table_number
+     FROM orders o
+     LEFT JOIN tables t ON t.id = o.table_id
+     WHERE o.session_id = $1 AND o.tenant_id = $2 AND o.status = 'draft'
+     ORDER BY o.order_number`,
+    [sessionId, tenantId]
+  );
+
+  if (draftOrders.rows.length > 0 && !force) {
+    throw new ApiError(409, "Cannot close session while draft orders remain", [
+      { code: "DRAFT_ORDERS", draftOrders: draftOrders.rows },
+    ]);
+  }
+
   const revenueResult = await pool.query(
-    `SELECT COALESCE(SUM(total), 0) AS closing_balance,
+    `SELECT COALESCE(SUM(total), 0) AS total_revenue,
             COUNT(*) AS total_orders
      FROM orders WHERE session_id = $1 AND tenant_id = $2 AND status = 'paid'`,
     [sessionId, tenantId]
   );
 
   const paymentBreakdown = await pool.query(
-    `SELECT p.method_type, COUNT(*) AS count, SUM(p.amount) AS total
+    `SELECT p.method_type, COUNT(*)::int AS count, COALESCE(SUM(p.amount), 0) AS total
      FROM payments p
      JOIN orders o ON o.id = p.order_id
      WHERE o.session_id = $1 AND o.tenant_id = $2 AND p.status = 'completed'
@@ -72,12 +87,13 @@ export async function closeSession(tenantId, sessionId) {
     [sessionId, tenantId]
   );
 
-  const closingBalance = revenueResult.rows[0].closing_balance;
+  const recordedClosing =
+    closingBalance != null ? Number(closingBalance) : Number(revenueResult.rows[0].total_revenue);
 
   const result = await pool.query(
     `UPDATE sessions SET status = 'closed', closed_at = NOW(), closing_balance = $3
      WHERE id = $2 AND tenant_id = $1 RETURNING *`,
-    [tenantId, sessionId, closingBalance]
+    [tenantId, sessionId, recordedClosing]
   );
 
   broadcastToAll(tenantId, WS_EVENTS.SESSION_CLOSED, { sessionId });
@@ -87,8 +103,10 @@ export async function closeSession(tenantId, sessionId) {
     session: result.rows[0],
     summary: {
       totalOrders: parseInt(revenueResult.rows[0].total_orders, 10),
-      totalRevenue: Number(closingBalance),
+      totalRevenue: Number(revenueResult.rows[0].total_revenue),
+      closingBalance: recordedClosing,
       paymentBreakdown: paymentBreakdown.rows,
+      draftOrdersCancelled: force ? draftOrders.rows.length : 0,
     },
   };
 }

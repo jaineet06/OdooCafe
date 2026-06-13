@@ -17,6 +17,6 @@ export async function open(req, res) {
 }
 
 export async function close(req, res) {
-  const data = await service.closeSession(req.tenantId, req.params.id);
+  const data = await service.closeSession(req.tenantId, req.params.id, req.body);
   return ApiResponse.success(res, data, "Session closed");
 }

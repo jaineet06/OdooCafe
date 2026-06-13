@@ -1,4 +1,4 @@
-import { pool } from "../../config/db.js";
+import pool from "../../config/db.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { broadcastToPOS } from "../../websocket/ws.helpers.js";
 import { WS_EVENTS } from "../../websocket/ws.events.js";

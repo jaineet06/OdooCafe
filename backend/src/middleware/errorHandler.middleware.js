@@ -17,5 +17,12 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
+  if (err.code === "28P01" || err.code === "ECONNREFUSED" || err.code === "ENOTFOUND") {
+    return res.status(503).json({
+      success: false,
+      message: "Database connection failed. Check DATABASE_URL in backend/.env",
+    });
+  }
+
   return res.status(500).json({ success: false, message: "Internal server error" });
 }

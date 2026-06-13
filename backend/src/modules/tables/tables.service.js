@@ -1,19 +1,49 @@
-import { pool } from "../../config/db.js";
+import pool from "../../config/db.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { broadcastToAll } from "../../websocket/ws.helpers.js";
 import { WS_EVENTS } from "../../websocket/ws.events.js";
+import { ACTIVE_ORDER_LATERAL, ORDER_STATUS_CASE } from "./tableStatus.sql.js";
 
 async function getTableStatus(tenantId, tableId) {
   const result = await pool.query(
     `SELECT t.id,
             CASE WHEN EXISTS (
               SELECT 1 FROM orders o
-              WHERE o.table_id = t.id AND o.tenant_id = $1 AND o.status = 'draft'
+              INNER JOIN sessions s ON s.id = o.session_id
+                AND s.tenant_id = o.tenant_id
+                AND s.status = 'open'
+              WHERE o.table_id = t.id
+                AND o.tenant_id = $1
+                AND o.status NOT IN ('paid', 'cancelled')
             ) THEN 'occupied' ELSE 'available' END AS status
      FROM tables t WHERE t.id = $2 AND t.tenant_id = $1`,
     [tenantId, tableId]
   );
   return result.rows[0]?.status || "available";
+}
+
+export async function getTableStatuses(tenantId) {
+  const openSessionId = await pool.query(
+    `SELECT id FROM sessions WHERE tenant_id = $1 AND status = 'open' ORDER BY opened_at DESC LIMIT 1`,
+    [tenantId]
+  );
+  const sessionId = openSessionId.rows[0]?.id;
+
+  const result = await pool.query(
+    `SELECT t.id, t.table_number, t.floor_id, f.name AS floor_name, t.seats, t.is_active,
+            ${ORDER_STATUS_CASE} AS order_status,
+            active_order.id AS draft_order_id,
+            active_order.order_number AS draft_order_number,
+            active_order.total AS draft_order_total
+     FROM tables t
+     JOIN floors f ON f.id = t.floor_id AND f.tenant_id = t.tenant_id
+     ${ACTIVE_ORDER_LATERAL}
+     WHERE t.tenant_id = $1
+     ORDER BY f.name, t.table_number`,
+    [tenantId]
+  );
+
+  return { sessionId, tables: result.rows };
 }
 
 export async function listTables(tenantId, { floorId } = {}) {
@@ -26,14 +56,15 @@ export async function listTables(tenantId, { floorId } = {}) {
 
   const result = await pool.query(
     `SELECT t.*, f.name AS floor_name,
-            CASE WHEN EXISTS (
-              SELECT 1 FROM orders o
-              WHERE o.table_id = t.id AND o.tenant_id = t.tenant_id AND o.status = 'draft'
-            ) THEN 'occupied' ELSE 'available' END AS order_status
+            ${ORDER_STATUS_CASE} AS order_status,
+            active_order.id AS draft_order_id,
+            active_order.order_number AS draft_order_number,
+            active_order.total AS draft_order_total
      FROM tables t
      JOIN floors f ON f.id = t.floor_id AND f.tenant_id = t.tenant_id
+     ${ACTIVE_ORDER_LATERAL}
      WHERE ${conditions.join(" AND ")}
-     ORDER BY t.table_number`,
+     ORDER BY f.name, t.table_number`,
     params
   );
   return result.rows;

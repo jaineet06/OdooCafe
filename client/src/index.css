@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+@theme {
+  /* Typography */
+  --font-display: "DM Serif Display", Georgia, serif;
+  --font-body: "Work Sans", system-ui, sans-serif;
+
+  /* Semantic colors */
+  --color-bg-base: #f5f0e8;
+  --color-bg-elevated: #faf8f4;
+  --color-bg-sunken: #ebe4d8;
+  --color-text-primary: #2c2c2c;
+  --color-text-secondary: #4a4a4a;
+  --color-text-muted: #7a7268;
+  --color-border-subtle: #d9d0c4;
+  --color-accent-primary: #c25b3a;
+  --color-accent-primary-hover: #a34a2f;
+  --color-accent-success: #6b7f6b;
+  --color-accent-warning: #d4a853;
+  --color-accent-danger: #b54040;
+  --color-accent-info: #5a7a8a;
+  --color-brand-espresso: #3b2314;
+
+  /* Legacy aliases (migrate gradually) */
+  --color-cream: var(--color-bg-base);
+  --color-cream-dark: var(--color-bg-sunken);
+  --color-surface: var(--color-bg-elevated);
+  --color-charcoal: var(--color-text-primary);
+  --color-charcoal-light: var(--color-text-secondary);
+  --color-border: var(--color-border-subtle);
+  --color-espresso: var(--color-brand-espresso);
+  --color-terracotta: var(--color-accent-primary);
+  --color-terracotta-dark: var(--color-accent-primary-hover);
+  --color-sage: var(--color-accent-success);
+  --color-sage-light: #8a9d8a;
+  --color-gold: var(--color-accent-warning);
+
+  /* KDS */
+  --color-kds-bg: #1a1410;
+  --color-kds-surface: #2c241c;
+  --color-kds-text: #f5f0e8;
+  --color-kds-muted: #a89e92;
+  --color-kds-border: #4a4038;
+
+  /* Radius */
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+  --radius-modal: 1rem;
+
+  /* Layout */
+  --sidebar-width: 14rem;
+  --sidebar-collapsed: 4.25rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+
+/* Focus ring — consistent everywhere */
+:focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Product card accent border on hover */
+.product-card { --cat-color: var(--color-accent-primary); }
+.product-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--cat-color), transparent 60%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+.product-card:hover::before { opacity: 1; }
+
+/* Table tiles */
+.table-tile { transition: transform 0.2s ease; }
+.table-tile:hover:not(:disabled) { transform: translateY(-2px); }
+
+/* KDS strikethrough animation */
+.kds-item-done {
+  text-decoration: line-through;
+  opacity: 0.55;
+  transition: opacity 0.3s ease, text-decoration 0.3s ease;
+}
+
+.cart-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-subtle) transparent;
+}
+.cart-scroll::-webkit-scrollbar { width: 6px; }
+.cart-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border-subtle);
+  border-radius: 3px;
+}
+
+/* Part B — dashboard & POS polish */
+.dashboard-card {
+  box-shadow: 0 1px 3px rgba(59, 35, 20, 0.06), 0 4px 12px rgba(59, 35, 20, 0.04);
+}
+
+.floor-canvas {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(107, 127, 107, 0.08), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(194, 91, 58, 0.06), transparent 35%),
+    var(--color-bg-sunken);
+}
+
+.pos-pill-cta {
+  min-height: 3rem;
+  border-radius: 9999px;
+  background: var(--color-brand-espresso);
+  color: var(--color-bg-elevated);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 14px rgba(59, 35, 20, 0.25);
+}
+.pos-pill-cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 35, 20, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -28,3 +28,8 @@ export async function confirmUpi(req, res) {
   const data = await service.confirmUpiPayment(req.tenantId, orderId, upiRef);
   return ApiResponse.success(res, data, "UPI payment confirmed");
 }
+
+export async function config(req, res) {
+  const data = await service.getPaymentConfig();
+  return ApiResponse.success(res, data);
+}

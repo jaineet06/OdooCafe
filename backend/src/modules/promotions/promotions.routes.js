@@ -11,7 +11,7 @@ const router = Router();
 
 router.use(authMiddleware, tenantMiddleware);
 
-router.get("/", rbac("admin"), asyncHandler(controller.list));
+router.get("/", rbac("admin", "employee"), asyncHandler(controller.list));
 router.post("/", rbac("admin"), validate(createPromotionSchema), asyncHandler(controller.create));
 router.put("/:id", rbac("admin"), validate(updatePromotionSchema), asyncHandler(controller.update));
 router.delete("/:id", rbac("admin"), asyncHandler(controller.remove));

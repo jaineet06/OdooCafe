@@ -11,6 +11,11 @@ export async function getById(req, res) {
   return ApiResponse.success(res, data);
 }
 
+export async function preview(req, res) {
+  const data = await service.previewOrder(req.tenantId, req.body);
+  return ApiResponse.success(res, data);
+}
+
 export async function create(req, res) {
   const data = await service.createOrder(req.tenantId, req.user.userId, req.body);
   return ApiResponse.created(res, data);

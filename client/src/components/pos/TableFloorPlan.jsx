@@ -1,0 +1,115 @@
+import { useRef, useEffect } from "react";
+import gsap from "gsap";
+import { Users } from "lucide-react";
+import { formatCurrency } from "../../utils/formatters";
+import { StatusPill } from "../common/Badge";
+
+export function TableFloorPlan({ tables, grouped, onSelectTable, stats }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const tiles = containerRef.current?.querySelectorAll("[data-table-tile]");
+    if (!tiles?.length) return;
+    gsap.fromTo(tiles, { opacity: 0, y: 16 }, { opacity: 1, y: 0, stagger: 0.04, duration: 0.4, ease: "power2.out" });
+  }, [grouped]);
+
+  return (
+    <div>
+      <div className="mb-8 flex flex-wrap gap-3">
+        <Stat label="Available" value={stats.available} color="var(--color-accent-success)" />
+        <Stat label="Occupied" value={stats.occupied} color="var(--color-accent-primary)" />
+        <Stat label="Total" value={stats.total} color="var(--color-brand-espresso)" />
+      </div>
+
+      <div ref={containerRef} className="floor-canvas space-y-10 rounded-2xl p-6 lg:p-8" style={{ perspective: "1200px" }}>
+        {grouped.map(([floorName, floorTables]) => (
+          <section key={floorName}>
+            <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-text-muted">{floorName}</h2>
+            <div
+              className="grid gap-6"
+              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}
+            >
+              {floorTables.map((t) => (
+                <TableTile key={t.id} table={t} onSelect={() => onSelectTable(t)} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TableTile({ table: t, onSelect }) {
+  const ref = useRef(null);
+  const occupied = t.order_status === "occupied";
+  const seats = Number(t.seats) || 4;
+  const isRound = seats <= 4;
+  const w = Math.min(160, 100 + seats * 12);
+  const h = isRound ? w : Math.max(90, w * 0.7);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    gsap.to(ref.current, {
+      scale: occupied ? 1.02 : 1,
+      duration: 0.5,
+      ease: "power2.out",
+    });
+  }, [occupied]);
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      data-table-tile
+      disabled={!t.is_active}
+      onClick={onSelect}
+        className="group flex flex-col items-center gap-3 disabled:opacity-40"
+        style={{ transformStyle: "preserve-3d" }}
+        onMouseEnter={(e) => {
+          if (!t.is_active) return;
+          e.currentTarget.querySelector("[data-tile-face]")?.style.setProperty("transform", "rotateX(4deg) translateY(-4px)");
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.querySelector("[data-tile-face]")?.style.setProperty("transform", "rotateX(8deg)");
+        }}
+    >
+      <div
+        data-tile-face
+        className="relative flex flex-col items-center justify-center border-2 transition-all duration-300 group-hover:shadow-xl"
+        style={{
+          width: w,
+          height: h,
+          borderRadius: isRound ? "50%" : "16px",
+          borderColor: occupied ? "var(--color-accent-primary)" : "var(--color-accent-success)",
+          background: occupied
+            ? "linear-gradient(145deg, rgba(194,91,58,0.15), rgba(194,91,58,0.05))"
+            : "linear-gradient(145deg, rgba(107,127,107,0.15), rgba(107,127,107,0.05))",
+          transform: "rotateX(8deg)",
+          boxShadow: occupied ? "0 12px 24px rgba(194,91,58,0.2)" : "0 8px 16px rgba(0,0,0,0.06)",
+        }}
+      >
+        <span className="font-display text-2xl text-brand-espresso">#{t.table_number}</span>
+        <span className="flex items-center gap-1 text-xs text-text-muted">
+          <Users size={12} /> {t.seats}
+        </span>
+        {occupied && t.draft_order_total && (
+          <span className="mt-1 text-xs font-bold text-accent-primary">{formatCurrency(t.draft_order_total)}</span>
+        )}
+        {occupied && (
+          <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-accent-primary ring-2 ring-bg-elevated" />
+        )}
+      </div>
+      <StatusPill status={occupied ? "occupied" : "available"} />
+    </button>
+  );
+}
+
+function Stat({ label, value, color }) {
+  return (
+    <div className="rounded-xl border border-border-subtle px-4 py-2" style={{ borderLeft: `4px solid ${color}` }}>
+      <p className="font-display text-2xl" style={{ color }}>{value}</p>
+      <p className="text-xs text-text-muted">{label}</p>
+    </div>
+  );
+}

@@ -14,6 +14,7 @@ router.get("/sales-trend", asyncHandler(controller.salesTrend));
 router.get("/top-products", asyncHandler(controller.topProducts));
 router.get("/top-categories", asyncHandler(controller.topCategories));
 router.get("/top-orders", asyncHandler(controller.topOrders));
+router.get("/order-status", asyncHandler(controller.orderStatus));
 router.get("/export", asyncHandler(controller.exportReport));
 
 export default router;

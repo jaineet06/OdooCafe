@@ -10,6 +10,7 @@ const router = Router();
 
 router.use(authMiddleware, tenantMiddleware);
 
+router.get("/:orderId/bill/pdf", asyncHandler(controller.downloadBillPDF));
 router.get("/:orderId/pdf", asyncHandler(controller.downloadPDF));
 router.post("/:orderId/email", validate(emailReceiptSchema), asyncHandler(controller.emailReceipt));
 

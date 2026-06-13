@@ -1,5 +1,6 @@
-import { pool } from "../../config/db.js";
+import pool from "../../config/db.js";
 import { ApiError } from "../../utils/ApiError.js";
+import { ACTIVE_ORDER_LATERAL, ORDER_STATUS_CASE } from "../tables/tableStatus.sql.js";
 
 export async function listFloors(tenantId) {
   const result = await pool.query(
@@ -11,13 +12,18 @@ export async function listFloors(tenantId) {
                   'table_number', t.table_number,
                   'seats', t.seats,
                   'is_active', t.is_active,
-                  'created_at', t.created_at
+                  'created_at', t.created_at,
+                  'order_status', ${ORDER_STATUS_CASE},
+                  'draft_order_id', active_order.id,
+                  'draft_order_number', active_order.order_number,
+                  'draft_order_total', active_order.total
                 ) ORDER BY t.table_number
               ) FILTER (WHERE t.id IS NOT NULL),
               '[]'
             ) AS tables
      FROM floors f
      LEFT JOIN tables t ON t.floor_id = f.id AND t.tenant_id = f.tenant_id
+     ${ACTIVE_ORDER_LATERAL}
      WHERE f.tenant_id = $1
      GROUP BY f.id
      ORDER BY f.name`,
