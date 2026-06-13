@@ -7,14 +7,18 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const router = Router();
 
-router.use(authMiddleware, tenantMiddleware, rbac("admin"));
+router.use(authMiddleware, tenantMiddleware);
+
+// POS employees use this for the order screen header (live order count)
+router.get("/order-status", rbac("admin", "employee"), asyncHandler(controller.orderStatus));
+
+router.use(rbac("admin"));
 
 router.get("/dashboard", asyncHandler(controller.dashboard));
 router.get("/sales-trend", asyncHandler(controller.salesTrend));
 router.get("/top-products", asyncHandler(controller.topProducts));
 router.get("/top-categories", asyncHandler(controller.topCategories));
 router.get("/top-orders", asyncHandler(controller.topOrders));
-router.get("/order-status", asyncHandler(controller.orderStatus));
 router.get("/export", asyncHandler(controller.exportReport));
 
 export default router;
