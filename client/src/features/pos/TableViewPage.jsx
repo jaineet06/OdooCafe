@@ -116,7 +116,8 @@ export default function TableViewPage() {
     const actualTableId = table.merge_primary_id || table.id;
     const actualTable = tables.find((t) => t.id === actualTableId) || table;
 
-    if (actualTable.is_occupied && actualTable.draft_order_id) {
+    // If this table has an active draft order, show that order instead of creating a new one
+    if (actualTable.draft_order_id) {
       navigate(`/pos/orders/${actualTable.draft_order_id}`);
       return;
     }

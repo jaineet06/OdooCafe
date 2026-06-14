@@ -9,6 +9,7 @@ import { categoriesRouter, productsRouter } from "./categories-products.routes.j
 import { floorsRouter, tablesRouter } from "./floors-tables.routes.js";
 import { ordersRouter, kdsRouter } from "./orders.routes.js";
 import { paymentsRouter, paymentMethodsRouter } from "./payments.routes.js";
+import { receiptsRouter } from "./receipts.routes.js";
 
 const apiRouter = Router();
 
@@ -27,5 +28,6 @@ apiRouter.use("/orders", ordersRouter);
 apiRouter.use("/kds", kdsRouter);
 apiRouter.use("/payments", paymentsRouter);
 apiRouter.use("/payment-methods", paymentMethodsRouter);
+apiRouter.use("/receipts", receiptsRouter);
 
 export default apiRouter;

@@ -18,12 +18,20 @@ export async function findFloors(tenantId) {
             'is_active', t.is_active,
             'created_at', t.created_at,
             'floor_id', t.floor_id,
-            'floor_name', f.name
+            'floor_name', f.name,
+            'draft_order_id', latest_draft.id,
+            'order_status', CASE WHEN t.is_occupied THEN 'occupied' ELSE 'available' END
           ) ORDER BY t.table_number
         ) FILTER (WHERE t.id IS NOT NULL), '[]'
       ) as tables
      FROM floors f
-     LEFT JOIN tables t ON t.floor_id = f.id
+     LEFT JOIN tables t ON t.floor_id = f.id AND t.tenant_id = $1
+     LEFT JOIN LATERAL (
+       SELECT id FROM orders
+       WHERE table_id = t.id AND tenant_id = $1 AND status = 'draft'
+       ORDER BY created_at DESC
+       LIMIT 1
+     ) latest_draft ON true
      WHERE f.tenant_id = $1
      GROUP BY f.id
      ORDER BY f.name`,
@@ -78,9 +86,20 @@ export async function findTables(tenantId, { floorId } = {}) {
   const result = await pool.query(
     `SELECT t.id, t.table_number, t.seats, t.shape, t.is_occupied,
             t.occupied_since, t.is_active, t.created_at,
-            f.id AS floor_id, f.name AS floor_name
+            f.id AS floor_id, f.name AS floor_name,
+            tm.primary_table_id AS merge_primary_id,
+            -- Get the most recent draft order for this table
+            draft_orders.id AS draft_order_id,
+            draft_orders.status AS order_status
      FROM tables t
      JOIN floors f ON f.id = t.floor_id
+     LEFT JOIN table_merges tm ON tm.merged_table_id = t.id AND tm.tenant_id = t.tenant_id
+     LEFT JOIN LATERAL (
+       SELECT id, status FROM orders
+       WHERE table_id = t.id AND tenant_id = $1 AND status = 'draft'
+       ORDER BY created_at DESC
+       LIMIT 1
+     ) draft_orders ON true
      WHERE ${conditions.join(" AND ")}
      ORDER BY f.name, t.table_number`,
     params

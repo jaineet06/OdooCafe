@@ -35,7 +35,9 @@ export async function previewOrder(data) {
 }
 
 export async function createOrder(tenantId, sessionId, createdBy, data) {
-  const totals = computeTotals(data.items, data.tipAmount, data.discounts);
+  // Compute totals server-side from real product prices
+  const enrichedItems = await model.enrichItemsWithPrices(tenantId, data.items);
+  const totals = computeTotals(enrichedItems, data.tipAmount, data.discounts);
   const order = await model.insertOrder(tenantId, sessionId, createdBy, data, totals);
   logger.info("Order created", { tenantId, orderId: order.id });
   return order;
@@ -120,18 +122,25 @@ export async function updateUpiId(tenantId, id, upiId) {
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 
-export async function confirmCashPayment(tenantId, { orderId, amount, amountTendered }) {
+export async function confirmCashPayment(tenantId, { orderId, amountTendered }) {
   const order = await model.findOrderById(tenantId, orderId);
   if (!order) throw new ApiError(404, "Order not found");
+  if (order.status === "paid") throw new ApiError(409, "Order is already paid");
 
-  const changeDue = Math.max((amountTendered ?? amount) - amount, 0);
+  // Always use the authoritative order total from DB — never trust client-sent amount
+  const amount = parseFloat(order.total);
+  const tendered = amountTendered != null ? parseFloat(amountTendered) : amount;
+  const changeDue = parseFloat(Math.max(tendered - amount, 0).toFixed(2));
+
   const payment = await model.insertPayment(tenantId, {
     orderId, methodType: "cash", amount,
-    amountTendered: amountTendered ?? amount,
+    amountTendered: tendered,
     changeDue, status: "completed",
   });
 
   await model.updateOrderStatus(tenantId, orderId, "paid");
+  // Free up the table
+  if (order.table_id) await model.setTableFree(tenantId, order.table_id);
   logger.info("Cash payment confirmed", { tenantId, orderId, paymentId: payment.id });
 
   broadcastToAll(tenantId, "ORDER_PAID", { orderId });
@@ -142,15 +151,20 @@ export async function confirmCashPayment(tenantId, { orderId, amount, amountTend
   return { payment, changeDue };
 }
 
-export async function confirmUpiPayment(tenantId, { orderId, amount, upiRef }) {
+export async function confirmUpiPayment(tenantId, { orderId, upiRef }) {
   const order = await model.findOrderById(tenantId, orderId);
   if (!order) throw new ApiError(404, "Order not found");
+  if (order.status === "paid") throw new ApiError(409, "Order is already paid");
+
+  // Always use the authoritative order total from DB
+  const amount = parseFloat(order.total);
 
   const payment = await model.insertPayment(tenantId, {
     orderId, methodType: "upi", amount, upiRef, status: "completed",
   });
 
   await model.updateOrderStatus(tenantId, orderId, "paid");
+  if (order.table_id) await model.setTableFree(tenantId, order.table_id);
   logger.info("UPI payment confirmed", { tenantId, orderId, paymentId: payment.id });
 
   broadcastToAll(tenantId, "ORDER_PAID", { orderId });
@@ -164,7 +178,7 @@ export async function confirmUpiPayment(tenantId, { orderId, amount, upiRef }) {
 export async function getPaymentsConfig(tenantId) {
   await model.upsertDefaultPaymentMethods(tenantId);
   const methods = await model.findPaymentMethods(tenantId);
-  return { methods };
+  return { methods, publishableKey: env.STRIPE_PUBLISHABLE_KEY || null };
 }
 
 export async function createPaymentIntent(tenantId, orderId) {
@@ -230,6 +244,7 @@ export async function handleStripeWebhook(signature, rawBody) {
         broadcastToAll(tenantId, "ORDER_PAID", { orderId });
         const order = await model.findOrderById(tenantId, orderId);
         if (order && order.table_id) {
+          await model.setTableFree(tenantId, order.table_id);
           broadcastToAll(tenantId, "TABLE_STATUS_CHANGED", { tableId: order.table_id });
         }
       }

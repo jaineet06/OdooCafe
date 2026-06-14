@@ -2,6 +2,27 @@ import pool from "../config/db.js";
 
 // ── Orders ───────────────────────────────────────────────────────────────────
 
+/**
+ * Fetches prices from DB and returns items with unitPrice, taxRate, lineTotal populated.
+ * This ensures totals are always computed from authoritative server-side data.
+ */
+export async function enrichItemsWithPrices(tenantId, items) {
+  const enriched = [];
+  for (const item of items) {
+    const res = await pool.query(
+      `SELECT price, tax_rate FROM products WHERE id = $1 AND tenant_id = $2`,
+      [item.productId, tenantId]
+    );
+    const product = res.rows[0];
+    if (!product) throw new Error(`Product ${item.productId} not found`);
+    const unitPrice = parseFloat(product.price);
+    const taxRate = parseFloat(product.tax_rate ?? 0);
+    const lineTotal = parseFloat((unitPrice * item.quantity).toFixed(2));
+    enriched.push({ ...item, unitPrice, taxRate, lineTotal });
+  }
+  return enriched;
+}
+
 export async function findOrders(tenantId, { sessionId, tableId, status, page = 1, limit = 50 } = {}) {
   const conditions = ["o.tenant_id = $1"];
   const params = [tenantId];
@@ -91,10 +112,21 @@ export async function insertOrder(tenantId, sessionId, createdBy, data, totals) 
     const order = orderRes.rows[0];
 
     for (const item of data.items) {
+      const prodRes = await client.query(
+        `SELECT price, tax_rate FROM products WHERE id = $1 AND tenant_id = $2`,
+        [item.productId, tenantId]
+      );
+      const product = prodRes.rows[0];
+      if (!product) throw new Error(`Product ${item.productId} not found`);
+
+      const unitPrice = parseFloat(product.price);
+      const taxRate = parseFloat(product.tax_rate ?? 0);
+      const lineTotal = parseFloat((unitPrice * item.quantity).toFixed(2));
+
       await client.query(
         `INSERT INTO order_items (order_id, tenant_id, product_id, quantity, unit_price, tax_rate, line_total, note)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [order.id, tenantId, item.productId, item.quantity, item.unitPrice, item.taxRate ?? 0, item.lineTotal, item.note || null]
+        [order.id, tenantId, item.productId, item.quantity, unitPrice, taxRate, lineTotal, item.note || null]
       );
     }
 
@@ -301,3 +333,12 @@ export async function updatePaymentStatusByIntentId(intentId, status) {
   return result.rows[0] || null;
 }
 
+// ── Table helpers ─────────────────────────────────────────────────────────────
+
+export async function setTableFree(tenantId, tableId) {
+  await pool.query(
+    `UPDATE tables SET is_occupied = false, occupied_since = NULL
+     WHERE id = $1 AND tenant_id = $2`,
+    [tableId, tenantId]
+  );
+}
