@@ -10,6 +10,8 @@ export function PosProvider({ children }) {
   const [couponCode, setCouponCode] = useState("");
   const [customerId, setCustomerId] = useState(null);
   const [editingOrderId, setEditingOrderId] = useState(null);
+  const [note, setNote] = useState("");
+  const [tipAmount, setTipAmount] = useState(0);
 
   const addToCart = useCallback((product) => {
     setCart((prev) => {
@@ -30,6 +32,7 @@ export function PosProvider({ children }) {
           categoryColor: product.category_color,
           imageUrl: resolveProductImage(product),
           quantity: 1,
+          note: "",
         },
       ];
     });
@@ -49,6 +52,8 @@ export function PosProvider({ children }) {
     setCustomerId(null);
     setEditingOrderId(null);
     setSelectedTable(null);
+    setNote("");
+    setTipAmount(0);
   }, []);
 
   return (
@@ -57,6 +62,7 @@ export function PosProvider({ children }) {
         selectedTable,
         setSelectedTable,
         cart,
+        setCart,
         addToCart,
         updateQty,
         clearCart,
@@ -66,6 +72,10 @@ export function PosProvider({ children }) {
         setCustomerId,
         editingOrderId,
         setEditingOrderId,
+        note,
+        setNote,
+        tipAmount,
+        setTipAmount,
       }}
     >
       {children}

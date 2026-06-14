@@ -10,7 +10,7 @@ export function AdminLayout({ children, title, actions, wide = false }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-bg-base">
+    <div className="flex min-h-screen bg-bg-base overflow-x-hidden">
       <Sidebar
         variant="admin"
         collapsed={collapsed}

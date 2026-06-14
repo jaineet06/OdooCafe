@@ -26,7 +26,7 @@ export function PosLayout({
   const isOrder = headerVariant === "order";
 
   return (
-    <div className="flex min-h-screen bg-bg-base">
+    <div className="flex min-h-screen bg-bg-base overflow-x-hidden">
       <Sidebar
         variant="pos"
         collapsed={collapsed}

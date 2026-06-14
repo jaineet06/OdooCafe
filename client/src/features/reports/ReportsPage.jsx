@@ -21,12 +21,24 @@ const STATUS_COLORS = { draft: CHART_COLORS.tertiary, paid: CHART_COLORS.seconda
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState("today");
+  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [endDate, setEndDate] = useState(new Date().toISOString().split("T")[0]);
   const [exporting, setExporting] = useState(null);
+
   const debouncedPeriod = useDebounce(period, 300);
-  const params = { period: debouncedPeriod };
+  const debouncedStartDate = useDebounce(startDate, 300);
+  const debouncedEndDate = useDebounce(endDate, 300);
+
+  const params = {
+    period: debouncedPeriod,
+    ...(debouncedPeriod === "custom" && {
+      startDate: debouncedStartDate,
+      endDate: debouncedEndDate,
+    }),
+  };
 
   const { data: dashboard, isLoading } = useQuery({
-    queryKey: ["reports", "dashboard", debouncedPeriod],
+    queryKey: ["reports", "dashboard", debouncedPeriod, debouncedStartDate, debouncedEndDate],
     queryFn: () => reportsApi.dashboard(params),
   });
 
@@ -37,22 +49,22 @@ export default function ReportsPage() {
   });
 
   const { data: trend } = useQuery({
-    queryKey: ["reports", "trend", debouncedPeriod],
+    queryKey: ["reports", "trend", debouncedPeriod, debouncedStartDate, debouncedEndDate],
     queryFn: () => reportsApi.salesTrend(params),
   });
 
   const { data: topProducts } = useQuery({
-    queryKey: ["reports", "top-products", debouncedPeriod],
+    queryKey: ["reports", "top-products", debouncedPeriod, debouncedStartDate, debouncedEndDate],
     queryFn: () => reportsApi.topProducts(params),
   });
 
   const { data: topCategories } = useQuery({
-    queryKey: ["reports", "top-categories", debouncedPeriod],
+    queryKey: ["reports", "top-categories", debouncedPeriod, debouncedStartDate, debouncedEndDate],
     queryFn: () => reportsApi.topCategories(params),
   });
 
   const { data: topOrders } = useQuery({
-    queryKey: ["reports", "top-orders", debouncedPeriod],
+    queryKey: ["reports", "top-orders", debouncedPeriod, debouncedStartDate, debouncedEndDate],
     queryFn: () => reportsApi.topOrders(params),
   });
 
@@ -94,15 +106,40 @@ export default function ReportsPage() {
     <AdminLayout title="Dashboard" wide>
       <div className="space-y-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <Tabs
-            value={period}
-            onChange={setPeriod}
-            items={[
-              { id: "today", label: "Today" },
-              { id: "week", label: "Week" },
-              { id: "month", label: "Month" },
-            ]}
-          />
+          <div className="flex flex-wrap items-center gap-4">
+            <Tabs
+              value={period}
+              onChange={setPeriod}
+              items={[
+                { id: "today", label: "Today" },
+                { id: "week", label: "Week" },
+                { id: "month", label: "Month" },
+                { id: "custom", label: "Custom Range" },
+              ]}
+            />
+            {period === "custom" && (
+              <div className="flex items-center gap-2 bg-bg-elevated p-2 rounded-xl border border-border-subtle">
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-text-muted">From:</span>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="rounded-lg border border-border-subtle bg-bg-base px-2 py-1 text-sm text-text-secondary focus:border-accent-primary focus:outline-none"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-text-muted">To:</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="rounded-lg border border-border-subtle bg-bg-base px-2 py-1 text-sm text-text-secondary focus:border-accent-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" icon={RefreshCw} loading={statusFetching} onClick={() => refetchStatus()}>
               Refresh live

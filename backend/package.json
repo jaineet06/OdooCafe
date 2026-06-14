@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "Multi-tenant Restaurant POS SaaS backend",
   "type": "module",
-  "main": "server.js",
+  "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node server.js",
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
     "migrate": "node src/db/migrations/run.js",
-    "seed": "node src/db/seeds/seed.js",
-    "reset": "node src/db/migrations/run.js && node src/db/seeds/seed.js",
+    "seed": "node src/seed/seed.js",
+    "reset": "node src/db/migrations/run.js && node src/seed/seed.js",
     "ws-test": "node scripts/ws-test.js"
   },
   "engines": {
@@ -32,6 +32,8 @@
     "pdfkit": "^0.15.2",
     "pg": "^8.13.1",
     "qrcode": "^1.5.4",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "stripe": "^17.5.0",
     "uuid": "^11.0.3",
     "winston": "^3.17.0",

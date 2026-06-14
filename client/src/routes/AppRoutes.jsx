@@ -16,6 +16,7 @@ const OrderDetailPage = lazy(() => import("../features/pos/orders-list/OrderDeta
 const PaymentPage = lazy(() => import("../features/pos/payment/PaymentPage"));
 const CustomersPage = lazy(() => import("../features/pos/customers/CustomersPage"));
 const TableViewPage = lazy(() => import("../features/pos/TableViewPage"));
+const KitchenStatusPage = lazy(() => import("../features/pos/KitchenStatusPage"));
 const ProductsAdminPage = lazy(() => import("../features/products/ProductsAdminPage"));
 const CategoriesAdminPage = lazy(() => import("../features/categories/CategoriesAdminPage"));
 const PaymentMethodsPage = lazy(() => import("../features/payment-methods/PaymentMethodsPage"));
@@ -92,6 +93,7 @@ export default function AppRoutes() {
         <Route path="/pos/payment/:orderId" element={<PosRoute><Lazy><PaymentPage /></Lazy></PosRoute>} />
         <Route path="/pos/customers" element={<PosRoute><Lazy><CustomersPage /></Lazy></PosRoute>} />
         <Route path="/pos/tables" element={<PosRoute><Lazy><TableViewPage /></Lazy></PosRoute>} />
+        <Route path="/pos/kitchen-status" element={<PosRoute><Lazy><KitchenStatusPage /></Lazy></PosRoute>} />
 
         {/* Kitchen display — setup is public; display requires KDS token */}
         <Route path="/kds/setup" element={<Lazy><KdsSetupPage /></Lazy>} />

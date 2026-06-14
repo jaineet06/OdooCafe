@@ -8,8 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const DROP_SQL = `
   DROP TABLE IF EXISTS kds_order_items, kds_orders, payments, order_discounts, order_items, orders,
-               sessions, promotions, coupons, payment_methods, tables, floors, products,
+               sessions, promotions, coupons, payment_methods, table_merges, tables, floors, products,
                product_categories, customers, kds_devices, users, tenants CASCADE;
+  DROP TYPE IF EXISTS table_shape CASCADE;
 `;
 
 async function migrate() {

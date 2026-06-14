@@ -18,6 +18,7 @@ import { StripeCardForm } from "../../../components/pos/StripeCardForm";
 import { useAwaitPayment } from "../../../hooks/useAwaitPayment";
 import { formatCurrency } from "../../../utils/formatters";
 import { openReceiptPdf, openBillPdf } from "../../../utils/receipt";
+import { SuccessCelebration } from "../../../components/pos/SuccessCelebration";
 
 const STEPS = ["Review", "Method", "Payment", "Receipt"];
 
@@ -43,6 +44,7 @@ export default function PaymentPage() {
   const [cardProcessing, setCardProcessing] = useState(false);
   const [clientSecret, setClientSecret] = useState(null);
   const [paid, setPaid] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const { data: order, refetch } = useQuery({
     queryKey: ["orders", orderId],
@@ -75,6 +77,7 @@ export default function PaymentPage() {
       setPaid(true);
       refetch();
       setStep(3);
+      setShowCelebration(true);
       toast.success("Card payment confirmed!");
     },
   });
@@ -82,6 +85,10 @@ export default function PaymentPage() {
   useEffect(() => {
     if (order?.status === "paid") setPaid(true);
   }, [order?.status]);
+
+  useEffect(() => {
+    if (order?.customer_email) setEmail(order.customer_email);
+  }, [order?.customer_email]);
 
   const cashMutation = useMutation({
     mutationFn: () => paymentsApi.confirmCash({ orderId, amountTendered: Number(amountTendered) }),
@@ -119,6 +126,7 @@ export default function PaymentPage() {
     queryClient.invalidateQueries({ queryKey: ["tables"] });
     refetch();
     setStep(3);
+    setShowCelebration(true);
     toast.success("Payment recorded!");
   };
 
@@ -151,7 +159,7 @@ export default function PaymentPage() {
   }
 
   const change = Number(amountTendered) - Number(order.total);
-  const canEmail = paid && order.status === "paid";
+  const canEmail = paid;
 
   return (
     <PosLayout>
@@ -177,7 +185,8 @@ export default function PaymentPage() {
               <div className="mt-4 space-y-1 border-t border-border-subtle pt-4 text-sm">
                 <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(order.subtotal)}</span></div>
                 <div className="flex justify-between"><span>Tax</span><span>{formatCurrency(order.tax_total)}</span></div>
-                {order.discount_total > 0 && <div className="flex justify-between text-accent-primary"><span>Discount</span><span>-{formatCurrency(order.discount_total)}</span></div>}
+                {Number(order.discount_total) > 0 && <div className="flex justify-between text-accent-primary"><span>Discount</span><span>-{formatCurrency(order.discount_total)}</span></div>}
+                {Number(order.tip_amount) > 0 && <div className="flex justify-between"><span>Tip</span><span>{formatCurrency(order.tip_amount)}</span></div>}
                 <div className="flex justify-between text-lg font-bold"><span>Total</span><span className="text-accent-primary">{formatCurrency(order.total)}</span></div>
               </div>
             </Card>
@@ -290,6 +299,7 @@ export default function PaymentPage() {
           </div>
         )}
       </div>
+      {showCelebration && <SuccessCelebration onComplete={() => setShowCelebration(false)} />}
     </PosLayout>
   );
 }

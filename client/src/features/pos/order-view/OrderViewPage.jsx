@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -28,8 +28,15 @@ export default function OrderViewPage() {
   const { categories, colorMap } = useCategories();
   const {
     cart, addToCart, updateQty, selectedTable, couponCode, setCouponCode,
-    customerId, editingOrderId, clearCart, setEditingOrderId,
+    customerId, editingOrderId, clearCart, setEditingOrderId, note, tipAmount,
   } = usePos();
+
+  useEffect(() => {
+    if (!selectedTable?.id && !editingOrderId) {
+      toast("Please select a table from the floor plan to start an order.", { icon: "📍" });
+      navigate("/pos/tables", { replace: true });
+    }
+  }, [selectedTable, editingOrderId, navigate]);
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -84,11 +91,12 @@ export default function OrderViewPage() {
   const products = productsData?.data || [];
 
   const { data: preview, isFetching: previewLoading } = useQuery({
-    queryKey: ["order-preview", cart, couponCode],
+    queryKey: ["order-preview", cart, couponCode, tipAmount],
     queryFn: () =>
       ordersApi.preview({
-        items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity, note: i.note || null })),
         couponCode: couponCode || null,
+        tipAmount: Number(tipAmount) || 0,
       }),
     enabled: cart.length > 0,
     staleTime: 500,
@@ -101,8 +109,10 @@ export default function OrderViewPage() {
         sessionId: session.id,
         tableId: selectedTable?.id || null,
         customerId,
-        items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+        items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity, note: i.note || null })),
         couponCode: couponCode || null,
+        note: note || null,
+        tipAmount: Number(tipAmount) || 0,
       };
       if (editingOrderId) return ordersApi.update(editingOrderId, payload);
       return ordersApi.create(payload);
@@ -204,7 +214,14 @@ export default function OrderViewPage() {
           onOpenDiscount={() => { setCouponInput(couponCode); setDiscountOpen(true); }}
           preview={preview}
           previewLoading={previewLoading}
-          onSave={() => saveMutation.mutate()}
+          onSave={() => {
+            if (!selectedTable?.id) {
+              setFloorOpen(true);
+              toast.error("Please select a table to proceed.");
+              return;
+            }
+            saveMutation.mutate();
+          }}
           savePending={saveMutation.isPending}
           editingOrderId={editingOrderId}
           selectedTable={selectedTable}

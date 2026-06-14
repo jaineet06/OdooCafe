@@ -52,23 +52,27 @@ export default function CategoriesAdminPage() {
   return (
     <AdminLayout
       title="Categories"
-      actions={<Button icon={Plus} onClick={openCreate}>Add category</Button>}
     >
       {isLoading ? (
         <TableSkeleton />
       ) : !categories?.length ? (
         <EmptyState icon={Tags} title="No categories yet" description="Create categories to organize your menu." action={<Button onClick={openCreate}>Add category</Button>} />
       ) : (
-        <div className="space-y-3">
-          {categories.map((c) => (
-            <ListRow key={c.id} accentColor={c.color}>
-              <span className="font-semibold">{c.name}</span>
-              <div className="flex gap-2">
-                <Button variant="secondary" size="sm" onClick={() => { setEditId(c.id); setForm({ name: c.name, color: c.color }); setOpen(true); }}>Edit</Button>
-                <Button variant="danger" size="sm" onClick={() => deleteMutation.mutate(c.id)}>Delete</Button>
-              </div>
-            </ListRow>
-          ))}
+        <div className="space-y-4">
+          <div className="space-y-3">
+            {categories.map((c) => (
+              <ListRow key={c.id} accentColor={c.color}>
+                <span className="font-semibold">{c.name}</span>
+                <div className="flex gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => { setEditId(c.id); setForm({ name: c.name, color: c.color }); setOpen(true); }}>Edit</Button>
+                  <Button variant="danger" size="sm" onClick={() => deleteMutation.mutate(c.id)}>Delete</Button>
+                </div>
+              </ListRow>
+            ))}
+          </div>
+          <div className="flex justify-center pt-2">
+            <Button icon={Plus} onClick={openCreate}>Add category</Button>
+          </div>
         </div>
       )}
 

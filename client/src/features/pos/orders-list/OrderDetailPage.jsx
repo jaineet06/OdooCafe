@@ -19,7 +19,7 @@ export default function OrderDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAdmin } = useAuth();
-  const { setCart, setEditingOrderId, setSelectedTable } = usePos();
+  const { setCart, setEditingOrderId, setSelectedTable, setCustomerId, setNote, setTipAmount } = usePos();
   const [printing, setPrinting] = useState(false);
 
   const { data: order, isLoading } = useQuery({
@@ -64,9 +64,13 @@ export default function OrderDetailPage() {
         taxRate: Number(i.tax_rate),
         quantity: i.quantity,
         imageUrl: i.image_url || null,
+        note: i.note || "",
       }))
     );
     if (order.table_id) setSelectedTable({ id: order.table_id, table_number: order.table_number });
+    setCustomerId(order.customer_id || null);
+    setNote(order.note || "");
+    setTipAmount(Number(order.tip_amount || 0));
     navigate("/pos/order");
   };
 

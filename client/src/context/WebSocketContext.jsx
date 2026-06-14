@@ -1,12 +1,16 @@
 import { createContext, useContext, useEffect, useRef, useCallback } from "react";
+import { io } from "socket.io-client";
 import { useAuth } from "./AuthContext";
 
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:5001";
+const SOCKET_URL = WS_URL.replace(/^ws/, "http");
+
 const WebSocketContext = createContext(null);
 
 export function WebSocketProvider({ children }) {
   const { token, isAuthenticated } = useAuth();
   const listenersRef = useRef(new Set());
+  const socketRef = useRef(null);
 
   const subscribe = useCallback((fn) => {
     listenersRef.current.add(fn);
@@ -14,34 +18,51 @@ export function WebSocketProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!isAuthenticated || !token) return;
+    if (!isAuthenticated || !token) {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      return;
+    }
 
-    let ws;
-    let reconnectTimer;
-    let closed = false;
+    console.log("Initializing Socket.io client...");
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
 
-    const connect = () => {
-      ws = new WebSocket(WS_URL);
-      ws.onopen = () => ws.send(JSON.stringify({ type: "AUTH", token }));
-      ws.onmessage = (e) => {
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("Socket.io connected successfully");
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("Socket.io connection error:", err.message);
+    });
+
+    socket.onAny((eventType, payload) => {
+      console.log(`Socket event received: ${eventType}`, payload);
+      listenersRef.current.forEach((fn) => {
         try {
-          const msg = JSON.parse(e.data);
-          if (msg.type === "AUTH_SUCCESS") return;
-          listenersRef.current.forEach((fn) => fn(msg.type, msg.payload));
-        } catch {
-          /* ignore */
+          fn(eventType, payload);
+        } catch (err) {
+          console.error("Error in socket event listener callback", err);
         }
-      };
-      ws.onclose = () => {
-        if (!closed) reconnectTimer = setTimeout(connect, 3000);
-      };
-    };
+      });
+    });
 
-    connect();
+    socket.on("disconnect", (reason) => {
+      console.log("Socket.io disconnected:", reason);
+    });
+
     return () => {
-      closed = true;
-      clearTimeout(reconnectTimer);
-      ws?.close();
+      socket.disconnect();
+      socketRef.current = null;
     };
   }, [token, isAuthenticated]);
 

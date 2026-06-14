@@ -47,27 +47,31 @@ export default function CouponsPromotionsPage() {
       </div>
 
       {tab === "coupons" ? (
-        <>
-          <Button onClick={() => setCouponOpen(true)}>Add coupon</Button>
-          <div className="mt-4 space-y-2">
+        <div className="space-y-4">
+          <div className="space-y-2">
             {coupons?.map((c) => (
-              <div key={c.id} className="rounded-xl border border-border bg-surface p-4">
+              <div key={c.id} className="rounded-xl border border-border bg-bg-elevated p-4">
                 <span className="font-bold">{c.code}</span> — {c.discount_type} {c.discount_value}
               </div>
             ))}
           </div>
-        </>
+          <div className="flex justify-center pt-2">
+            <Button onClick={() => setCouponOpen(true)}>Add coupon</Button>
+          </div>
+        </div>
       ) : (
-        <>
-          <Button onClick={() => setPromoOpen(true)}>Add promotion</Button>
-          <div className="mt-4 space-y-2">
+        <div className="space-y-4">
+          <div className="space-y-2">
             {promotions?.map((p) => (
-              <div key={p.id} className="rounded-xl border border-border bg-surface p-4">
+              <div key={p.id} className="rounded-xl border border-border bg-bg-elevated p-4">
                 <span className="font-bold">{p.name}</span> — {p.apply_to} {p.discount_type} {p.discount_value}
               </div>
             ))}
           </div>
-        </>
+          <div className="flex justify-center pt-2">
+            <Button onClick={() => setPromoOpen(true)}>Add promotion</Button>
+          </div>
+        </div>
       )}
 
       <Modal open={couponOpen} onClose={() => setCouponOpen(false)} title="New coupon">

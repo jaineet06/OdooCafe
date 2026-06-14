@@ -20,7 +20,7 @@ import { useAuth } from "../../context/AuthContext";
 const ICON = { size: 18, strokeWidth: 1.75 };
 
 const linkClass = ({ isActive }) =>
-  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap ${
     isActive
       ? "bg-accent-primary/12 text-accent-primary"
       : "text-text-secondary hover:bg-bg-sunken hover:text-text-primary"
@@ -82,8 +82,8 @@ const adminNav = [
 const posNav = [
   { to: "/pos/order", label: "POS Order", icon: Coffee },
   { to: "/pos/orders", label: "Orders", icon: ClipboardList },
-  { to: "/pos/customers", label: "Customers", icon: Users },
   { to: "/pos/tables", label: "Table View", icon: LayoutGrid },
+  { to: "/pos/kitchen-status", label: "Kitchen Status", icon: Monitor },
 ];
 
 export function Sidebar({ variant, collapsed, onToggleCollapse, mobileOpen, onMobileClose }) {
@@ -98,10 +98,10 @@ export function Sidebar({ variant, collapsed, onToggleCollapse, mobileOpen, onMo
   function SidebarPanel({ isCollapsed }) {
     return (
       <aside
-        className={`flex h-full flex-col border-r border-border-subtle bg-bg-elevated transition-all duration-200 ${isCollapsed ? "w-[4.25rem]" : "w-56"}`}
+        className="flex h-full w-full flex-col overflow-x-hidden border-r border-border-subtle bg-bg-elevated"
       >
-        <div className="flex h-14 items-center justify-between border-b border-border-subtle px-3">
-          {!isCollapsed && <span className="truncate font-display text-lg text-brand-espresso">Odoo Cafe</span>}
+        <div className="flex h-14 items-center justify-between border-b border-border-subtle px-3 shrink-0">
+          {!isCollapsed && <span className="truncate font-display text-lg text-brand-espresso whitespace-nowrap">Odoo Cafe</span>}
           <button
             type="button"
             onClick={onToggleCollapse}
@@ -156,7 +156,7 @@ export function Sidebar({ variant, collapsed, onToggleCollapse, mobileOpen, onMo
 
   return (
     <>
-      <div className="sticky top-0 hidden h-screen shrink-0 md:flex">
+      <div className={`sticky top-0 hidden h-screen shrink-0 md:flex transition-[width] duration-200 ease-in-out ${collapsed ? "w-[4.25rem]" : "w-56"}`}>
         <SidebarPanel isCollapsed={collapsed} />
       </div>
 

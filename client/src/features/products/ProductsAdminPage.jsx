@@ -18,6 +18,7 @@ import { formatCurrency } from "../../utils/formatters";
 import { useCategories, getCategoryColor } from "../../context/CategoryContext";
 import { resolveProductImage, searchUnsplashPhotos } from "../../utils/unsplash";
 import { useDebounce } from "../../hooks/useDebounce";
+import { ProductImage } from "../../components/pos/ProductImage";
 
 const empty = { name: "", price: "", categoryId: "", taxRate: "5", description: "", imageUrl: "" };
 const PLACEHOLDER =
@@ -153,7 +154,6 @@ export default function ProductsAdminPage() {
   return (
     <AdminLayout
       title="Products"
-      actions={<Button icon={Plus} onClick={() => { setEditId(null); setForm(empty); setImagePreview(null); setImageFile(null); setOpen(true); }}>Add product</Button>}
     >
       <PageToolbar>
         <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products…" className="min-w-[200px] flex-1 max-w-xs" />
@@ -168,24 +168,34 @@ export default function ProductsAdminPage() {
       ) : products.length === 0 ? (
         <EmptyState icon={Package} title="No products" description="Add your first menu item to get started." action={<Button onClick={() => setOpen(true)}>Add product</Button>} />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products.map((p) => (
-            <Card key={p.id} padding="none" accentColor={getCategoryColor(colorMap, p.category_id, p.category_color)} className="overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md">
-              <div className="aspect-[4/3] overflow-hidden bg-bg-sunken">
-                <img src={resolveProductImage(p)} alt={p.name} className="h-full w-full object-cover" />
-              </div>
-              <div className="p-4">
-                <p className="truncate font-semibold">{p.name}</p>
-                <p className="text-sm text-text-muted">{p.category_name}</p>
-                <p className="mt-1 font-display text-lg text-accent-primary">{formatCurrency(p.price)}</p>
-                {p.description && <p className="mt-1 line-clamp-2 text-xs text-text-muted">{p.description}</p>}
-              </div>
-              <div className="flex gap-2 border-t border-border-subtle bg-bg-base px-4 py-3">
-                <Button variant="secondary" size="sm" className="flex-1" onClick={() => openEdit(p)}>Edit</Button>
-                <Button variant="danger" size="sm" onClick={() => deleteMutation.mutate(p.id)}>Delete</Button>
-              </div>
-            </Card>
-          ))}
+        <div className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {products.map((p) => (
+              <Card key={p.id} padding="none" accentColor={getCategoryColor(colorMap, p.category_id, p.category_color)} className="overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md">
+                <div className="aspect-[4/3] overflow-hidden bg-bg-sunken">
+                  <ProductImage
+                    src={p.image_url}
+                    name={p.name}
+                    color={getCategoryColor(colorMap, p.category_id, p.category_color)}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="p-4">
+                  <p className="truncate font-semibold">{p.name}</p>
+                  <p className="text-sm text-text-muted">{p.category_name}</p>
+                  <p className="mt-1 font-display text-lg text-accent-primary">{formatCurrency(p.price)}</p>
+                  {p.description && <p className="mt-1 line-clamp-2 text-xs text-text-muted">{p.description}</p>}
+                </div>
+                <div className="flex gap-2 border-t border-border-subtle bg-bg-base px-4 py-3">
+                  <Button variant="secondary" size="sm" className="flex-1" onClick={() => openEdit(p)}>Edit</Button>
+                  <Button variant="danger" size="sm" onClick={() => deleteMutation.mutate(p.id)}>Delete</Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div className="flex justify-center pt-2">
+            <Button icon={Plus} onClick={() => { setEditId(null); setForm(empty); setImagePreview(null); setImageFile(null); setOpen(true); }}>Add product</Button>
+          </div>
         </div>
       )}
 

@@ -1,14 +1,8 @@
-import { useState } from "react";
 import { Plus } from "lucide-react";
 import { formatCurrency } from "../../utils/formatters";
-import { resolveProductImage } from "../../utils/unsplash";
-
-const FALLBACK =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='160' viewBox='0 0 200 160'%3E%3Crect fill='%23ebe4d8' width='200' height='160'/%3E%3C/svg%3E";
+import { ProductImage } from "./ProductImage";
 
 export function ProductCard({ product, color, onAdd }) {
-  const [imgSrc, setImgSrc] = useState(() => resolveProductImage(product));
-
   return (
     <div
       role="button"
@@ -23,12 +17,11 @@ export function ProductCard({ product, color, onAdd }) {
       className="product-card group relative flex w-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-bg-elevated text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
     >
       <div className="relative flex flex-1 items-center justify-center bg-bg-sunken/50 px-4 pt-6 pb-2">
-        <img
-          src={imgSrc}
-          alt={product.name}
-          className="h-28 w-full object-contain transition-transform duration-300 group-hover:scale-105"
-          loading="lazy"
-          onError={() => setImgSrc(FALLBACK)}
+        <ProductImage
+          src={product.image_url}
+          name={product.name}
+          color={color}
+          className="h-28 w-full rounded-xl object-contain transition-transform duration-300 group-hover:scale-105"
         />
         <button
           type="button"

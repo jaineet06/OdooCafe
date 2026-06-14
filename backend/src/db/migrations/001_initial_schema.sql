@@ -60,15 +60,30 @@ CREATE TABLE floors (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TYPE table_shape AS ENUM ('square', 'rectangle', 'round');
+
 CREATE TABLE tables (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   floor_id UUID NOT NULL REFERENCES floors(id) ON DELETE CASCADE,
   table_number VARCHAR(20) NOT NULL,
   seats INTEGER NOT NULL CHECK (seats > 0),
+  shape table_shape DEFAULT 'square',
+  is_occupied BOOLEAN DEFAULT FALSE,
+  occupied_since TIMESTAMPTZ,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(tenant_id, table_number)
+);
+
+CREATE TABLE table_merges (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  primary_table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
+  merged_table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(tenant_id, merged_table_id),
+  CHECK (primary_table_id <> merged_table_id)
 );
 
 CREATE TABLE payment_methods (
@@ -137,7 +152,9 @@ CREATE TABLE orders (
   subtotal NUMERIC(10,2) DEFAULT 0,
   tax_total NUMERIC(10,2) DEFAULT 0,
   discount_total NUMERIC(10,2) DEFAULT 0,
+  tip_amount NUMERIC(10,2) DEFAULT 0 CHECK (tip_amount >= 0),
   total NUMERIC(10,2) DEFAULT 0,
+  note TEXT,
   created_by UUID NOT NULL REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -152,6 +169,7 @@ CREATE TABLE order_items (
   unit_price NUMERIC(10,2) NOT NULL,
   tax_rate NUMERIC(5,2) NOT NULL DEFAULT 0,
   line_total NUMERIC(10,2) NOT NULL,
+  note TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
