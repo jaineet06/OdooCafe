@@ -5,6 +5,7 @@ import { stripe } from "../config/stripe.js";
 import { env } from "../config/env.js";
 import QRCode from "qrcode";
 import { broadcastToAll } from "../websocket/socket.helpers.js";
+import { validateCoupon } from "./coupons-promotions.service.js";
 
 function computeTotals(items, tipAmount = 0, discounts = []) {
   const subtotal = items.reduce((s, i) => s + i.lineTotal, 0);
@@ -29,16 +30,43 @@ export async function getOrder(tenantId, id) {
   return order;
 }
 
-export async function previewOrder(data) {
-  const totals = computeTotals(data.items, data.tipAmount, data.discounts);
-  return { ...totals, items: data.items };
+export async function previewOrder(tenantId, data) {
+  const enrichedItems = await model.enrichItemsWithPrices(tenantId, data.items);
+  let discounts = data.discounts || [];
+  if (data.couponCode) {
+    const subtotal = enrichedItems.reduce((s, i) => s + i.lineTotal, 0);
+    const { coupon, discountAmount } = await validateCoupon(tenantId, data.couponCode, subtotal);
+    discounts = [
+      ...discounts,
+      {
+        sourceType: "coupon",
+        sourceId: coupon.id,
+        discountAmount: discountAmount
+      }
+    ];
+  }
+  const totals = computeTotals(enrichedItems, data.tipAmount, discounts);
+  return { ...totals, items: enrichedItems, discounts };
 }
 
 export async function createOrder(tenantId, sessionId, createdBy, data) {
   // Compute totals server-side from real product prices
   const enrichedItems = await model.enrichItemsWithPrices(tenantId, data.items);
-  const totals = computeTotals(enrichedItems, data.tipAmount, data.discounts);
-  const order = await model.insertOrder(tenantId, sessionId, createdBy, data, totals);
+  let discounts = data.discounts || [];
+  if (data.couponCode) {
+    const subtotal = enrichedItems.reduce((s, i) => s + i.lineTotal, 0);
+    const { coupon, discountAmount } = await validateCoupon(tenantId, data.couponCode, subtotal);
+    discounts = [
+      ...discounts,
+      {
+        sourceType: "coupon",
+        sourceId: coupon.id,
+        discountAmount: discountAmount
+      }
+    ];
+  }
+  const totals = computeTotals(enrichedItems, data.tipAmount, discounts);
+  const order = await model.insertOrder(tenantId, sessionId, createdBy, { ...data, discounts }, totals);
   logger.info("Order created", { tenantId, orderId: order.id });
   return order;
 }
@@ -47,8 +75,25 @@ export async function updateOrder(tenantId, id, data) {
   const order = await model.findOrderById(tenantId, id);
   if (!order) throw new ApiError(404, "Order not found");
   if (order.status !== "draft") throw new ApiError(409, "Only draft orders can be edited");
-  const totals = computeTotals(data.items, data.tipAmount, data.discounts);
-  return model.insertOrder(tenantId, order.session_id, order.created_by, data, totals);
+  
+  const enrichedItems = await model.enrichItemsWithPrices(tenantId, data.items);
+  let discounts = data.discounts || [];
+  if (data.couponCode) {
+    const subtotal = enrichedItems.reduce((s, i) => s + i.lineTotal, 0);
+    const { coupon, discountAmount } = await validateCoupon(tenantId, data.couponCode, subtotal);
+    discounts = [
+      ...discounts,
+      {
+        sourceType: "coupon",
+        sourceId: coupon.id,
+        discountAmount: discountAmount
+      }
+    ];
+  }
+  const totals = computeTotals(enrichedItems, data.tipAmount, discounts);
+  const updatedOrder = await model.updateOrder(tenantId, id, { ...data, discounts }, totals);
+  logger.info("Order updated", { tenantId, orderId: id });
+  return updatedOrder;
 }
 
 export async function sendOrderToKds(tenantId, id) {

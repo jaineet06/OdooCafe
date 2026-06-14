@@ -150,6 +150,112 @@ export async function insertOrder(tenantId, sessionId, createdBy, data, totals) 
   }
 }
 
+export async function updateOrder(tenantId, id, data, totals) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const orderRes = await client.query(
+      `UPDATE orders
+       SET table_id = $3,
+           customer_id = $4,
+           subtotal = $5,
+           tax_total = $6,
+           discount_total = $7,
+           tip_amount = $8,
+           total = $9,
+           note = $10,
+           updated_at = NOW()
+       WHERE id = $1 AND tenant_id = $2
+       RETURNING *`,
+      [
+        id, tenantId,
+        data.tableId || null, data.customerId || null,
+        totals.subtotal, totals.taxTotal, totals.discountTotal,
+        data.tipAmount ?? 0, totals.total,
+        data.note || null
+      ]
+    );
+    const order = orderRes.rows[0];
+    if (!order) throw new Error("Order not found");
+
+    // Delete old order items
+    await client.query(
+      `DELETE FROM order_items WHERE order_id = $1 AND tenant_id = $2`,
+      [id, tenantId]
+    );
+
+    // Insert new order items
+    for (const item of data.items) {
+      const prodRes = await client.query(
+        `SELECT price, tax_rate FROM products WHERE id = $1 AND tenant_id = $2`,
+        [item.productId, tenantId]
+      );
+      const product = prodRes.rows[0];
+      if (!product) throw new Error(`Product ${item.productId} not found`);
+
+      const unitPrice = parseFloat(product.price);
+      const taxRate = parseFloat(product.tax_rate ?? 0);
+      const lineTotal = parseFloat((unitPrice * item.quantity).toFixed(2));
+
+      await client.query(
+        `INSERT INTO order_items (order_id, tenant_id, product_id, quantity, unit_price, tax_rate, line_total, note)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [id, tenantId, item.productId, item.quantity, unitPrice, taxRate, lineTotal, item.note || null]
+      );
+    }
+
+    // Delete old discounts
+    await client.query(
+      `DELETE FROM order_discounts WHERE order_id = $1 AND tenant_id = $2`,
+      [id, tenantId]
+    );
+
+    // Insert new discounts
+    if (data.discounts?.length) {
+      for (const d of data.discounts) {
+        await client.query(
+          `INSERT INTO order_discounts (order_id, tenant_id, source_type, source_id, discount_amount)
+           VALUES ($1,$2,$3,$4,$5)`,
+          [id, tenantId, d.sourceType, d.sourceId, d.discountAmount]
+        );
+      }
+    }
+
+    // Sync KDS if order was already sent to KDS
+    const kdsOrderRes = await client.query(
+      `SELECT id FROM kds_orders WHERE order_id = $1 AND tenant_id = $2`,
+      [id, tenantId]
+    );
+    const kdsOrder = kdsOrderRes.rows[0];
+    if (kdsOrder) {
+      await client.query(
+        `DELETE FROM kds_order_items WHERE kds_order_id = $1 AND tenant_id = $2`,
+        [kdsOrder.id, tenantId]
+      );
+      const newItems = await client.query(
+        `SELECT id FROM order_items WHERE order_id = $1 AND tenant_id = $2`,
+        [id, tenantId]
+      );
+      for (const item of newItems.rows) {
+        await client.query(
+          `INSERT INTO kds_order_items (kds_order_id, order_item_id, tenant_id)
+           VALUES ($1, $2, $3)`,
+          [kdsOrder.id, item.id, tenantId]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+    return order;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export async function updateOrderStatus(tenantId, id, status) {
   const result = await pool.query(
     `UPDATE orders SET status = $3, updated_at = NOW()

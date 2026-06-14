@@ -114,9 +114,15 @@ function TableTile({
     borderColor = "var(--color-accent-primary)";
     borderWidth = "4px";
     background = "rgba(194, 91, 58, 0.25)";
+    if (isMerged) {
+      borderStyle = "dashed";
+    }
   } else if (occupied) {
     borderColor = "var(--color-accent-primary)";
     background = "linear-gradient(145deg, rgba(194,91,58,0.15), rgba(194,91,58,0.05))";
+    if (isMerged) {
+      borderStyle = "dashed";
+    }
   } else if (isMerged) {
     borderColor = "var(--color-accent-info)";
     borderStyle = "dashed";

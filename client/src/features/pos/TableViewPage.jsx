@@ -14,7 +14,7 @@ import { Button } from "../../components/common/Button";
 export default function TableViewPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { setSelectedTable } = usePos();
+  const { setSelectedTable, clearCart } = usePos();
 
   const [isMergeMode, setIsMergeMode] = useState(false);
   const [selectedTables, setSelectedTables] = useState([]);
@@ -122,6 +122,7 @@ export default function TableViewPage() {
       return;
     }
 
+    clearCart();
     setSelectedTable({
       id: actualTable.id,
       table_number: actualTable.table_number,

@@ -13,12 +13,53 @@ export async function findFloors(tenantId) {
             'table_number', t.table_number,
             'seats', t.seats,
             'shape', t.shape,
-            'is_occupied', t.is_occupied,
-            'occupied_since', t.occupied_since,
+            'is_occupied', COALESCE(
+              (
+                SELECT is_occupied FROM tables 
+                WHERE id = COALESCE(
+                  (SELECT primary_table_id FROM table_merges WHERE merged_table_id = t.id AND tenant_id = $1),
+                  (SELECT primary_table_id FROM table_merges WHERE primary_table_id = t.id AND tenant_id = $1 LIMIT 1)
+                ) AND tenant_id = $1
+              ),
+              t.is_occupied
+            ),
+            'occupied_since', COALESCE(
+              (
+                SELECT occupied_since FROM tables 
+                WHERE id = COALESCE(
+                  (SELECT primary_table_id FROM table_merges WHERE merged_table_id = t.id AND tenant_id = $1),
+                  (SELECT primary_table_id FROM table_merges WHERE primary_table_id = t.id AND tenant_id = $1 LIMIT 1)
+                ) AND tenant_id = $1
+              ),
+              t.occupied_since
+            ),
             'is_active', t.is_active,
             'created_at', t.created_at,
             'floor_id', t.floor_id,
             'floor_name', f.name,
+            'merge_primary_id', (
+              SELECT primary_table_id FROM table_merges
+              WHERE (merged_table_id = t.id OR primary_table_id = t.id) AND tenant_id = $1
+              LIMIT 1
+            ),
+            'combined_seats', (
+              SELECT SUM(t2.seats)::int 
+              FROM tables t2
+              WHERE t2.tenant_id = $1 
+                AND (
+                  t2.id = COALESCE(
+                    (SELECT primary_table_id FROM table_merges WHERE merged_table_id = t.id AND tenant_id = $1),
+                    (SELECT primary_table_id FROM table_merges WHERE primary_table_id = t.id AND tenant_id = $1 LIMIT 1)
+                  )
+                  OR t2.id IN (
+                    SELECT merged_table_id FROM table_merges 
+                    WHERE primary_table_id = COALESCE(
+                      (SELECT primary_table_id FROM table_merges WHERE merged_table_id = t.id AND tenant_id = $1),
+                      (SELECT primary_table_id FROM table_merges WHERE primary_table_id = t.id AND tenant_id = $1 LIMIT 1)
+                    ) AND tenant_id = $1
+                  )
+                )
+            ),
             'draft_order_id', latest_draft.id,
             'order_status', CASE WHEN t.is_occupied THEN 'occupied' ELSE 'available' END
           ) ORDER BY t.table_number
@@ -84,10 +125,52 @@ export async function findTables(tenantId, { floorId } = {}) {
   }
 
   const result = await pool.query(
-    `SELECT t.id, t.table_number, t.seats, t.shape, t.is_occupied,
-            t.occupied_since, t.is_active, t.created_at,
+    `SELECT t.id, t.table_number, t.seats, t.shape,
+            COALESCE(
+              (
+                SELECT is_occupied FROM tables 
+                WHERE id = COALESCE(
+                  tm.primary_table_id,
+                  (SELECT primary_table_id FROM table_merges WHERE primary_table_id = t.id AND tenant_id = t.tenant_id LIMIT 1)
+                ) AND tenant_id = t.tenant_id
+              ),
+              t.is_occupied
+            ) AS is_occupied,
+            COALESCE(
+              (
+                SELECT occupied_since FROM tables 
+                WHERE id = COALESCE(
+                  tm.primary_table_id,
+                  (SELECT primary_table_id FROM table_merges WHERE primary_table_id = t.id AND tenant_id = t.tenant_id LIMIT 1)
+                ) AND tenant_id = t.tenant_id
+              ),
+              t.occupied_since
+            ) AS occupied_since,
+            t.is_active, t.created_at,
             f.id AS floor_id, f.name AS floor_name,
-            tm.primary_table_id AS merge_primary_id,
+            COALESCE(tm.primary_table_id, (
+              SELECT primary_table_id FROM table_merges
+              WHERE primary_table_id = t.id AND tenant_id = t.tenant_id
+              LIMIT 1
+            )) AS merge_primary_id,
+            (
+              SELECT SUM(t2.seats)::int 
+              FROM tables t2
+              WHERE t2.tenant_id = t.tenant_id 
+                AND (
+                  t2.id = COALESCE(
+                    tm.primary_table_id,
+                    (SELECT primary_table_id FROM table_merges WHERE primary_table_id = t.id AND tenant_id = t.tenant_id LIMIT 1)
+                  )
+                  OR t2.id IN (
+                    SELECT merged_table_id FROM table_merges 
+                    WHERE primary_table_id = COALESCE(
+                      tm.primary_table_id,
+                      (SELECT primary_table_id FROM table_merges WHERE primary_table_id = t.id AND tenant_id = t.tenant_id LIMIT 1)
+                    ) AND tenant_id = t.tenant_id
+                  )
+                )
+            ) AS combined_seats,
             -- Get the most recent draft order for this table
             draft_orders.id AS draft_order_id,
             draft_orders.status AS order_status

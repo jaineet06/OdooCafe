@@ -22,8 +22,8 @@ tablesRouter.use(authMiddleware, tenantMiddleware);
 
 tablesRouter.get("/", asyncHandler(ctrl.listTables));
 tablesRouter.post("/", rbac("admin"), asyncHandler(ctrl.createTable));
-tablesRouter.post("/merge", rbac("admin"), asyncHandler(ctrl.mergeTables));
-tablesRouter.post("/unmerge", rbac("admin"), asyncHandler(ctrl.unmergeTables));
+tablesRouter.post("/merge", rbac("admin", "employee"), asyncHandler(ctrl.mergeTables));
+tablesRouter.post("/unmerge", rbac("admin", "employee"), asyncHandler(ctrl.unmergeTables));
 tablesRouter.put("/:id", rbac("admin"), asyncHandler(ctrl.updateTable));
 tablesRouter.delete("/:id", rbac("admin"), asyncHandler(ctrl.deleteTable));
 tablesRouter.patch("/:id/status", rbac("admin"), asyncHandler(ctrl.setTableStatus));

@@ -13,7 +13,7 @@ import { TableFloorPlan } from "../../../components/pos/TableFloorPlan";
 export function FloorPopup({ open, onClose }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { setSelectedTable } = usePos();
+  const { setSelectedTable, clearCart } = usePos();
 
   const { data: floors, isLoading } = useQuery({
     queryKey: ["floors"],
@@ -51,6 +51,7 @@ export function FloorPopup({ open, onClose }) {
       navigate(`/pos/orders/${table.draft_order_id}`);
       return;
     }
+    clearCart();
     setSelectedTable({ ...table, floorName: table.floor_name });
     onClose();
     navigate("/pos/order");

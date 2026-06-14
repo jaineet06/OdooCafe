@@ -14,7 +14,7 @@ export async function getOrder(req, res) {
 }
 
 export async function previewOrder(req, res) {
-  const data = await service.previewOrder(req.body);
+  const data = await service.previewOrder(req.tenantId, req.body);
   return ApiResponse.success(res, data);
 }
 
